@@ -89,9 +89,11 @@ func main() {
 			"build",
 		}
 		for _, r := range repositoriesSlice {
-			args = append(args, fmt.Sprintf("-t %v/%v:%v", r, *container, estafetteBuildVersion))
+			args = append(args, "--tag")
+			args = append(args, fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersion))
 			for _, t := range tagsSlice {
-				args = append(args, fmt.Sprintf("-t %v/%v:%v", r, *container, t))
+				args = append(args, "--tag")
+				args = append(args, fmt.Sprintf("%v/%v:%v", r, *container, t))
 			}
 		}
 		args = append(args, *path)
