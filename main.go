@@ -80,7 +80,9 @@ func main() {
 
 		// copy files/dirs from copySlice to build path
 		for _, c := range copySlice {
-			exec.Command("cp", []string{"-r", c, *path}...).Run()
+			log.Printf("Copying %v to %v\n", c, *path)
+			err := exec.Command("cp", []string{"-r", c, *path}...).Run()
+			handleError(err)
 		}
 
 		// build docker image
@@ -96,7 +98,8 @@ func main() {
 			tagsArg,
 			*path,
 		}
-		exec.Command("docker", args...).Run()
+		err := exec.Command("docker", args...).Run()
+		handleError(err)
 
 	case "push":
 
@@ -123,7 +126,8 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				exec.Command("docker", tagArgs...).Run()
+				err := exec.Command("docker", tagArgs...).Run()
+				handleError(err)
 			}
 
 			loginIfRequired(credentials, targetContainerPath)
@@ -134,7 +138,8 @@ func main() {
 				"push",
 				targetContainerPath,
 			}
-			exec.Command("docker", pushArgs...).Run()
+			err := exec.Command("docker", pushArgs...).Run()
+			handleError(err)
 
 			// push additional tags
 			for _, t := range tagsSlice {
@@ -148,7 +153,8 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				exec.Command("docker", tagArgs...).Run()
+				err := exec.Command("docker", tagArgs...).Run()
+				handleError(err)
 
 				loginIfRequired(credentials, targetContainerPath)
 
@@ -157,7 +163,8 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				exec.Command("docker", pushArgs...).Run()
+				err = exec.Command("docker", pushArgs...).Run()
+				handleError(err)
 			}
 		}
 
@@ -182,7 +189,8 @@ func main() {
 			"pull",
 			sourceContainerPath,
 		}
-		exec.Command("docker", pullArgs...).Run()
+		err := exec.Command("docker", pullArgs...).Run()
+		handleError(err)
 
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
@@ -197,7 +205,8 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				exec.Command("docker", tagArgs...).Run()
+				err = exec.Command("docker", tagArgs...).Run()
+				handleError(err)
 
 				loginIfRequired(credentials, targetContainerPath)
 
@@ -207,7 +216,8 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				exec.Command("docker", pushArgs...).Run()
+				err = exec.Command("docker", pushArgs...).Run()
+				handleError(err)
 			}
 
 			// push additional tags
@@ -222,7 +232,8 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				exec.Command("docker", tagArgs...).Run()
+				err = exec.Command("docker", tagArgs...).Run()
+				handleError(err)
 
 				loginIfRequired(credentials, targetContainerPath)
 
@@ -231,7 +242,8 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				exec.Command("docker", pushArgs...).Run()
+				err = exec.Command("docker", pushArgs...).Run()
+				handleError(err)
 			}
 		}
 
@@ -278,6 +290,13 @@ func loginIfRequired(credentials []*contracts.ContainerRepositoryCredentialConfi
 			loginArgs = append(loginArgs, server)
 		}
 
-		exec.Command("docker", loginArgs...).Run()
+		err := exec.Command("docker", loginArgs...).Run()
+		handleError(err)
+	}
+}
+
+func handleError(err error) {
+	if err != nil {
+		log.Fatal(err)
 	}
 }
