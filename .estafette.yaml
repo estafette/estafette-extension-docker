@@ -27,21 +27,23 @@ stages:
     - go build -a -installsuffix cgo -ldflags "-X main.version=${ESTAFETTE_BUILD_VERSION} -X main.revision=${ESTAFETTE_GIT_REVISION} -X main.branch=${ESTAFETTE_GIT_BRANCH} -X main.buildDate=${ESTAFETTE_BUILD_DATETIME}" -o ./publish/${ESTAFETTE_LABEL_APP} .
 
   bake:
-    image: docker:18.06.1-ce
-    commands:
-    - cp Dockerfile ./publish
-    - docker build -t extensions/docker:${ESTAFETTE_BUILD_VERSION} ./publish
+    image: extensions/docker:stable
+    action: build
+    container: docker
+    repositories:
+    - extensions
+    path: ./publish
+    copy:
+    - Dockerfile
 
   push-to-docker-hub:
-    image: docker:18.06.1-ce
-    env:
-      DOCKER_HUB_USERNAME: estafette.secret(793-0QLfe5QN3n1k.mDk5fL-_urybZ3T9Z3famkSZR68d-SrfqA==)
-      DOCKER_HUB_PASSWORD: estafette.secret(3p0Geq5U12j98HXV.Eaupah0YHK6nQkMgT4WYzC5R8FRQbDk5H6aTo1saw35de2KQ)
-    commands:
-    - docker login --username=${DOCKER_HUB_USERNAME} --password="${DOCKER_HUB_PASSWORD}"
-    - docker push extensions/docker:${ESTAFETTE_BUILD_VERSION}
-    - docker tag extensions/docker:${ESTAFETTE_BUILD_VERSION} extensions/docker:dev
-    - docker push extensions/docker:dev
+    image: extensions/docker:stable
+    action: push
+    container: docker
+    repositories:
+    - extensions
+    tags:
+    - dev
 
   slack-notify:
     image: extensions/slack-build-status:dev
@@ -56,29 +58,22 @@ releases:
   beta:
     stages:
       tag-container-image:
-        image: docker:18.03.1-ce
-        env:
-          DOCKER_HUB_USERNAME: estafette.secret(_0ev7h12O3XFhlhU.Rj3txIB6mwkf0C20nXsvI23w_g_Dw-v8Ug==)
-          DOCKER_HUB_PASSWORD: estafette.secret(3hHwj9FPPLwpdv2d.fp8NYuy1IbCR7MJvT4OeRhYgkDa8BnrkJSSdbA6Cn2gkr6kh)
-          TARGET_TAG: beta
-        commands:
-        - docker login --username=${DOCKER_HUB_USERNAME} --password="${DOCKER_HUB_PASSWORD}"
-        - docker pull extensions/docker:${ESTAFETTE_BUILD_VERSION}
-        - docker tag extensions/docker:${ESTAFETTE_BUILD_VERSION} extensions/docker:${TARGET_TAG}
-        - docker push extensions/docker:${TARGET_TAG}
+        image: extensions/docker:stable
+        action: tag
+        container: docker
+        repositories:
+        - extensions
+        tags:
+        - beta
 
   stable:
     stages:
       tag-container-image:
-        image: docker:18.03.1-ce
-        env:
-          DOCKER_HUB_USERNAME: estafette.secret(_0ev7h12O3XFhlhU.Rj3txIB6mwkf0C20nXsvI23w_g_Dw-v8Ug==)
-          DOCKER_HUB_PASSWORD: estafette.secret(3hHwj9FPPLwpdv2d.fp8NYuy1IbCR7MJvT4OeRhYgkDa8BnrkJSSdbA6Cn2gkr6kh)
-          TARGET_TAG: stable
-        commands:
-        - docker login --username=${DOCKER_HUB_USERNAME} --password="${DOCKER_HUB_PASSWORD}"
-        - docker pull extensions/docker:${ESTAFETTE_BUILD_VERSION}
-        - docker tag extensions/docker:${ESTAFETTE_BUILD_VERSION} extensions/docker:${TARGET_TAG}
-        - docker push extensions/docker:${TARGET_TAG}
-        - docker tag extensions/docker:${ESTAFETTE_BUILD_VERSION} extensions/docker:latest
-        - docker push extensions/docker:latest
+        image: extensions/docker:stable
+        action: tag
+        container: docker
+        repositories:
+        - extensions
+        tags:
+        - stable
+        - latest
