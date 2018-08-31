@@ -28,7 +28,9 @@ var (
 	container    = kingpin.Flag("container", "Name of the container to build, defaults to app label if present.").Envar("ESTAFETTE_EXTENSION_CONTAINER").String()
 	tags         = kingpin.Flag("tags", "List of tags the image needs to receive.").Envar("ESTAFETTE_EXTENSION_TAGS").String()
 	path         = kingpin.Flag("path", "Directory to build docker container from, defaults to current working directory.").Default(".").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_PATH").String()
+	dockerfile   = kingpin.Flag("dockerfile", "Dockerfile to build, defaults to Dockerfile.").Default("Dockerfile").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_DOCKERFILE").String()
 	copy         = kingpin.Flag("copy", "List of files or directories to copy into the build directory.").Envar("ESTAFETTE_EXTENSION_COPY").String()
+	args         = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
 )
 
 func main() {
@@ -72,6 +74,10 @@ func main() {
 	if *copy != "" {
 		copySlice = strings.Split(*copy, ",")
 	}
+	// var argsSlice []string
+	// if *args != "" {
+	// 	argsSlice = strings.Split(*args, ",")
+	// }
 	estafetteBuildVersion := os.Getenv("ESTAFETTE_BUILD_VERSION")
 
 	switch *action {
@@ -94,7 +100,7 @@ func main() {
 		}
 
 		// build docker image
-		log.Printf("Building docker image\n")
+		log.Printf("Building docker image %v/%v:%v...\n", repositoriesSlice[0], *container, estafetteBuildVersion)
 		args := []string{
 			"build",
 		}
@@ -106,6 +112,9 @@ func main() {
 				args = append(args, fmt.Sprintf("%v/%v:%v", r, *container, t))
 			}
 		}
+
+		args = append(args, "--file")
+		args = append(args, fmt.Sprintf("%v/%v", *path, *dockerfile))
 		args = append(args, *path)
 		runCommand("docker", args)
 
