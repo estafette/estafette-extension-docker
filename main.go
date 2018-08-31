@@ -280,8 +280,10 @@ func loginIfRequired(credentials []*contracts.ContainerRepositoryCredentialConfi
 		log.Printf("Logging in to repository %v for image %v\n", credential.Repository, containerImage)
 		loginArgs := []string{
 			"login",
-			fmt.Sprintf("--username %v", credential.Username),
-			fmt.Sprintf("--password %v", credential.Password),
+			"--username",
+			credential.Username,
+			"--password",
+			credential.Password,
 		}
 
 		repositorySlice := strings.Split(credential.Repository, "/")
@@ -302,7 +304,7 @@ func handleError(err error) {
 
 func runCommand(command string, args []string) {
 	if args[0] != "login" {
-		log.Printf("Running command %v %v", command, strings.Join(args, " "))
+		log.Printf("Running command '%v %v'...", command, strings.Join(args, " "))
 	}
 	cpCmd := exec.Command(command, args...)
 	cpCmd.Dir = "/estafette-work"
