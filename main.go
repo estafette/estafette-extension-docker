@@ -292,6 +292,7 @@ func handleError(err error) {
 }
 
 func runCommand(command string, args []string) {
+	log.Printf("Running command %v %v", command, strings.Join(args, " "))
 	cpCmd := exec.Command(command, args...)
 	cpCmd.Dir = "/estafette-work"
 	cpCmd.Stdout = os.Stdout
