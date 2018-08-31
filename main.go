@@ -85,6 +85,7 @@ func main() {
 		}
 
 		// build docker image
+		log.Printf("Building docker image\n")
 		args := []string{
 			"build",
 		}
