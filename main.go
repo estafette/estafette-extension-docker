@@ -85,18 +85,16 @@ func main() {
 		}
 
 		// build docker image
-		tagsArg := ""
-		for _, r := range repositoriesSlice {
-			tagsArg += fmt.Sprintf("-t %v/%v:%v", r, *container, estafetteBuildVersion)
-			for _, t := range tagsSlice {
-				tagsArg += fmt.Sprintf("-t %v/%v:%v", r, *container, t)
-			}
-		}
 		args := []string{
 			"build",
-			tagsArg,
-			*path,
 		}
+		for _, r := range repositoriesSlice {
+			args = append(args, fmt.Sprintf("-t %v/%v:%v", r, *container, estafetteBuildVersion))
+			for _, t := range tagsSlice {
+				args = append(args, fmt.Sprintf("-t %v/%v:%v", r, *container, t))
+			}
+		}
+		args = append(args, *path)
 		runCommand("docker", args)
 
 	case "push":
