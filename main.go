@@ -60,9 +60,18 @@ func main() {
 	validateRepositories(*repositories)
 
 	// split into arrays and set other variables
-	repositoriesSlice := strings.Split(*repositories, ",")
-	tagsSlice := strings.Split(*tags, ",")
-	copySlice := strings.Split(*copy, ",")
+	var repositoriesSlice []string
+	if *repositories != "" {
+		repositoriesSlice = strings.Split(*repositories, ",")
+	}
+	var tagsSlice []string
+	if *tags != "" {
+		tagsSlice = strings.Split(*tags, ",")
+	}
+	var copySlice []string
+	if *copy != "" {
+		copySlice = strings.Split(*copy, ",")
+	}
 	estafetteBuildVersion := os.Getenv("ESTAFETTE_BUILD_VERSION")
 
 	switch *action {
@@ -292,7 +301,9 @@ func handleError(err error) {
 }
 
 func runCommand(command string, args []string) {
-	log.Printf("Running command %v %v", command, strings.Join(args, " "))
+	if args[0] != "login" {
+		log.Printf("Running command %v %v", command, strings.Join(args, " "))
+	}
 	cpCmd := exec.Command(command, args...)
 	cpCmd.Dir = "/estafette-work"
 	cpCmd.Stdout = os.Stdout
