@@ -292,7 +292,8 @@ func loginIfRequired(credentials []*contracts.ContainerRepositoryCredentialConfi
 			loginArgs = append(loginArgs, server)
 		}
 
-		runCommand("docker", loginArgs)
+		err := exec.Command("docker", loginArgs...).Run()
+		handleError(err)
 	}
 }
 
@@ -303,13 +304,11 @@ func handleError(err error) {
 }
 
 func runCommand(command string, args []string) {
-	if args[0] != "login" {
-		log.Printf("Running command '%v %v'...", command, strings.Join(args, " "))
-	}
-	cpCmd := exec.Command(command, args...)
-	cpCmd.Dir = "/estafette-work"
-	cpCmd.Stdout = os.Stdout
-	cpCmd.Stderr = os.Stderr
-	err := cpCmd.Run()
+	log.Printf("Running command '%v %v'...", command, strings.Join(args, " "))
+	cmd := exec.Command(command, args...)
+	cmd.Dir = "/estafette-work"
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
 	handleError(err)
 }
