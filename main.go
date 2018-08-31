@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
+	contracts "github.com/estafette/estafette-ci-contracts"
 )
 
 var (
@@ -45,6 +47,13 @@ func main() {
 	appLabel := os.Getenv("ESTAFETTE_LABEL_APP")
 	if *container == "" && appLabel != "" {
 		*container = appLabel
+	}
+
+	// get private container registries credentials
+	credentialsJSON := os.Getenv("ESTAFETTE_CI_REPOSITORY_CREDENTIALS_JSON")
+	var credentials []*contracts.ContainerRepositoryCredentialConfig
+	if credentialsJSON != "" {
+		json.Unmarshal([]byte(credentialsJSON), &credentials)
 	}
 
 	// validate inputs
@@ -117,6 +126,8 @@ func main() {
 				exec.Command("docker", tagArgs...).Run()
 			}
 
+			loginIfRequired(credentials, targetContainerPath)
+
 			// push container with default tag
 			log.Printf("Pushing container image %v\n", targetContainerPath)
 			pushArgs := []string{
@@ -139,6 +150,8 @@ func main() {
 				}
 				exec.Command("docker", tagArgs...).Run()
 
+				loginIfRequired(credentials, targetContainerPath)
+
 				log.Printf("Pushing container image %v\n", targetContainerPath)
 				pushArgs := []string{
 					"push",
@@ -160,6 +173,8 @@ func main() {
 		// - latest
 
 		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersion)
+
+		loginIfRequired(credentials, sourceContainerPath)
 
 		// pull source container first
 		log.Printf("Pulling container image %v\n", sourceContainerPath)
@@ -184,6 +199,8 @@ func main() {
 				}
 				exec.Command("docker", tagArgs...).Run()
 
+				loginIfRequired(credentials, targetContainerPath)
+
 				// push container with default tag
 				log.Printf("Pushing container image %v\n", targetContainerPath)
 				pushArgs := []string{
@@ -207,6 +224,8 @@ func main() {
 				}
 				exec.Command("docker", tagArgs...).Run()
 
+				loginIfRequired(credentials, targetContainerPath)
+
 				log.Printf("Pushing container image %v\n", targetContainerPath)
 				pushArgs := []string{
 					"push",
@@ -224,5 +243,41 @@ func main() {
 func validateRepositories(repositories string) {
 	if repositories == "" {
 		log.Fatal("Set `repositories:` to list at least one `- <repository>` (for example like `- extensions`)")
+	}
+}
+
+func getCredentialsForContainer(credentials []*contracts.ContainerRepositoryCredentialConfig, containerImage string) *contracts.ContainerRepositoryCredentialConfig {
+	if credentials != nil {
+		for _, credentials := range credentials {
+			containerImageSlice := strings.Split(containerImage, "/")
+			containerRepo := strings.Join(containerImageSlice[:len(containerImageSlice)-1], "/")
+
+			if containerRepo == credentials.Repository {
+				return credentials
+			}
+		}
+	}
+
+	return nil
+}
+
+func loginIfRequired(credentials []*contracts.ContainerRepositoryCredentialConfig, containerImage string) {
+	credential := getCredentialsForContainer(credentials, containerImage)
+	if credential != nil {
+
+		log.Printf("Logging in to repository %v for image %v\n", credential.Repository, containerImage)
+		loginArgs := []string{
+			"login",
+			fmt.Sprintf("--username %v", credential.Username),
+			fmt.Sprintf("--password %v", credential.Password),
+		}
+
+		repositorySlice := strings.Split(credential.Repository, "/")
+		if len(repositorySlice) > 1 {
+			server := repositorySlice[0]
+			loginArgs = append(loginArgs, server)
+		}
+
+		exec.Command("docker", loginArgs...).Run()
 	}
 }
