@@ -93,6 +93,10 @@ func main() {
 		// - Dockerfile
 		// - /etc/ssl/certs/ca-certificates.crt
 
+		// make build dir if it doesn't exist
+		log.Printf("Ensuring build directory %v exists\n", *path)
+		runCommand("mkdir", []string{"-p", *path})
+
 		// copy files/dirs from copySlice to build path
 		for _, c := range copySlice {
 			log.Printf("Copying %v to %v\n", c, *path)
