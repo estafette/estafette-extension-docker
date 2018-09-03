@@ -74,24 +74,43 @@ func main() {
 	if *copy != "" {
 		copySlice = strings.Split(*copy, ",")
 	}
-	// var argsSlice []string
-	// if *args != "" {
-	// 	argsSlice = strings.Split(*args, ",")
-	// }
+	var argsSlice []string
+	if *args != "" {
+		argsSlice = strings.Split(*args, ",")
+	}
 	estafetteBuildVersion := os.Getenv("ESTAFETTE_BUILD_VERSION")
 
 	switch *action {
 	case "build":
 
+		// minimal using defaults
+
 		// image: extensions/docker:stable
 		// action: build
+		// repositories:
+		// - extensions
+
+		// with defaults:
+
+		// path: .
+		// container: ${ESTAFETTE_LABEL_APP}
+		// dockerfile: Dockerfile
+
+		// or use a more verbose version to override defaults
+
+		// image: extensions/docker:stable
+		// env: SOME_BUILD_ARG_ENVVAR
+		// action: build
 		// container: docker
+		// dockerfile: Dockerfile
 		// repositories:
 		// - extensions
 		// path: .
 		// copy:
 		// - Dockerfile
 		// - /etc/ssl/certs/ca-certificates.crt
+		// args:
+		// - SOME_BUILD_ARG_ENVVAR
 
 		// make build dir if it doesn't exist
 		log.Printf("Ensuring build directory %v exists\n", *path)
@@ -115,6 +134,11 @@ func main() {
 				args = append(args, "--tag")
 				args = append(args, fmt.Sprintf("%v/%v:%v", r, *container, t))
 			}
+		}
+		for _, a := range argsSlice {
+			argValue := os.Getenv(a)
+			args = append(args, "--build-arg")
+			args = append(args, fmt.Sprintf("%v=%v", a, argValue))
 		}
 
 		args = append(args, "--file")
