@@ -122,8 +122,12 @@ func main() {
 			runCommand("cp", []string{"-r", c, *path})
 		}
 
+		// todo - check FROM statement to see whether login is required
+		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersion)
+		loginIfRequired(credentials, containerPath)
+
 		// build docker image
-		log.Printf("Building docker image %v/%v:%v...\n", repositoriesSlice[0], *container, estafetteBuildVersion)
+		log.Printf("Building docker image %v...\n", containerPath)
 		args := []string{
 			"build",
 		}
