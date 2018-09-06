@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -79,6 +80,7 @@ func main() {
 		argsSlice = strings.Split(*args, ",")
 	}
 	estafetteBuildVersion := os.Getenv("ESTAFETTE_BUILD_VERSION")
+	estafetteBuildVersionAsTag := tidyBuildVersionAsTag(estafetteBuildVersion)
 
 	switch *action {
 	case "build":
@@ -123,7 +125,7 @@ func main() {
 		}
 
 		// todo - check FROM statement to see whether login is required
-		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersion)
+		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 		loginIfRequired(credentials, containerPath)
 
 		// build docker image
@@ -133,7 +135,7 @@ func main() {
 		}
 		for _, r := range repositoriesSlice {
 			args = append(args, "--tag")
-			args = append(args, fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersion))
+			args = append(args, fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
 			for _, t := range tagsSlice {
 				args = append(args, "--tag")
 				args = append(args, fmt.Sprintf("%v/%v:%v", r, *container, t))
@@ -160,12 +162,12 @@ func main() {
 		// tags:
 		// - dev
 
-		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersion)
+		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
 
-			targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersion)
+			targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag)
 
 			if i > 0 {
 				// tag container with default tag (it already exists for the first repository)
@@ -225,7 +227,7 @@ func main() {
 		// - stable
 		// - latest
 
-		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersion)
+		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		loginIfRequired(credentials, sourceContainerPath)
 
@@ -240,7 +242,7 @@ func main() {
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
 
-			targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersion)
+			targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag)
 
 			if i > 0 {
 				// tag container with default tag
@@ -352,4 +354,11 @@ func runCommand(command string, args []string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	handleError(err)
+}
+
+func tidyBuildVersionAsTag(buildVersion string) string {
+	// A tag name must be valid ASCII and may contain lowercase and uppercase letters, digits, underscores, periods and dashes.
+	// A tag name may not start with a period or a dash and may contain a maximum of 128 characters.
+	reg := regexp.MustCompile(`[^a-zA-Z0-9_.\-]+`)
+	return reg.ReplaceAllString(buildVersion, "-")
 }
