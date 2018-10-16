@@ -118,6 +118,11 @@ func main() {
 		log.Printf("Ensuring build directory %v exists\n", *path)
 		runCommand("mkdir", []string{"-p", *path})
 
+		// add dockerfile to items to copy if path is non-default and dockerfile isn't in the list to copy already
+		if *path != "." && !contains(copySlice, *dockerfile) {
+			copySlice = append(copySlice, *dockerfile)
+		}
+
 		// copy files/dirs from copySlice to build path
 		for _, c := range copySlice {
 			log.Printf("Copying %v to %v\n", c, *path)
@@ -361,4 +366,13 @@ func tidyBuildVersionAsTag(buildVersion string) string {
 	// A tag name may not start with a period or a dash and may contain a maximum of 128 characters.
 	reg := regexp.MustCompile(`[^a-zA-Z0-9_.\-]+`)
 	return reg.ReplaceAllString(buildVersion, "-")
+}
+
+func contains(values []string, value string) bool {
+	for _, v := range values {
+		if v == value {
+			return true
+		}
+	}
+	return false
 }
