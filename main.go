@@ -57,6 +57,8 @@ func main() {
 	var credentials []*contracts.ContainerRepositoryCredentialConfig
 	if credentialsJSON != "" {
 		json.Unmarshal([]byte(credentialsJSON), &credentials)
+	} else {
+		log.Printf("ESTAFETTE_CI_REPOSITORY_CREDENTIALS_JSON is not set\n")
 	}
 
 	// validate inputs
@@ -307,15 +309,23 @@ func validateRepositories(repositories string) {
 }
 
 func getCredentialsForContainer(credentials []*contracts.ContainerRepositoryCredentialConfig, containerImage string) *contracts.ContainerRepositoryCredentialConfig {
+
 	if credentials != nil {
+		containerImageSlice := strings.Split(containerImage, "/")
+		containerRepo := strings.Join(containerImageSlice[:len(containerImageSlice)-1], "/")
+
+		log.Printf("Checking whether image repo %v matches any credentials\n", containerRepo)
+
 		for _, credentials := range credentials {
-			containerImageSlice := strings.Split(containerImage, "/")
-			containerRepo := strings.Join(containerImageSlice[:len(containerImageSlice)-1], "/")
+
+			log.Printf("Checking whether image repo %v and credential repo %v match\n", containerRepo, credentials.Repository)
 
 			if containerRepo == credentials.Repository {
 				return credentials
 			}
 		}
+	} else {
+		log.Printf("No credentials are defined\n")
 	}
 
 	return nil
@@ -323,8 +333,8 @@ func getCredentialsForContainer(credentials []*contracts.ContainerRepositoryCred
 
 func loginIfRequired(credentials []*contracts.ContainerRepositoryCredentialConfig, containerImage string) {
 	credential := getCredentialsForContainer(credentials, containerImage)
-	if credential != nil {
 
+	if credential != nil {
 		log.Printf("Logging in to repository %v for image %v\n", credential.Repository, containerImage)
 		loginArgs := []string{
 			"login",
