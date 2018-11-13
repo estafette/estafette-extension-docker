@@ -47,12 +47,12 @@ stages:
 
   slack-notify:
     image: extensions/slack-build-status:dev
-    webhook: estafette.secret(eoN9GnRnfeMLL7L0.ThpJZ1iBKSjR93u1IkQu8nm8dgdOrDeZsGkFMB-GPaAfPXUw4zH3kYjHu3rpW2hbZmuVMAviOrqQ-dNmujWOBHWQDMDPvwO2KO884caanb-LGx1CPAFF7qaPZpeU)
+    workspace: estafette
     channels:
     - '#build-status'
     when:
-      status == 'failed' ||
-      status == 'succeeded'
+      status == 'succeeded' ||
+      status == 'failed'
 
 releases:
   beta:
@@ -68,12 +68,12 @@ releases:
 
       slack-notify:
         image: extensions/slack-build-status:dev
-        webhook: estafette.secret(eoN9GnRnfeMLL7L0.ThpJZ1iBKSjR93u1IkQu8nm8dgdOrDeZsGkFMB-GPaAfPXUw4zH3kYjHu3rpW2hbZmuVMAviOrqQ-dNmujWOBHWQDMDPvwO2KO884caanb-LGx1CPAFF7qaPZpeU)
+        workspace: estafette
         channels:
         - '#build-status'
         when:
-          status == 'failed' ||
-          status == 'succeeded'
+          status == 'succeeded' ||
+          status == 'failed'
 
   stable:
     stages:
@@ -89,9 +89,9 @@ releases:
 
       slack-notify:
         image: extensions/slack-build-status:dev
-        webhook: estafette.secret(eoN9GnRnfeMLL7L0.ThpJZ1iBKSjR93u1IkQu8nm8dgdOrDeZsGkFMB-GPaAfPXUw4zH3kYjHu3rpW2hbZmuVMAviOrqQ-dNmujWOBHWQDMDPvwO2KO884caanb-LGx1CPAFF7qaPZpeU)
+        workspace: estafette
         channels:
         - '#build-status'
         when:
-          status == 'failed' ||
-          status == 'succeeded'
+          status == 'succeeded' ||
+          status == 'failed'
