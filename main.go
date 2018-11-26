@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -153,7 +154,7 @@ func main() {
 		}
 
 		args = append(args, "--file")
-		args = append(args, fmt.Sprintf("%v/%v", *path, *dockerfile))
+		args = append(args, filepath.Join(*path, filepath.Base(*dockerfile)))
 		args = append(args, *path)
 		runCommand("docker", args)
 
