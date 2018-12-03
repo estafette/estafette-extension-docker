@@ -119,8 +119,8 @@ func main() {
 		log.Printf("Ensuring build directory %v exists\n", *path)
 		runCommand("mkdir", []string{"-p", *path})
 
-		// add dockerfile to items to copy if path is non-default and dockerfile isn't in the list to copy already
-		if *path != "." && !contains(copySlice, *dockerfile) {
+		// add dockerfile to items to copy if path is non-default, and dockerfile isn't in the list to copy already, and if it is not there already
+		if *path != "." && !contains(copySlice, *dockerfile) && filepath.Clean(filepath.Dir(*dockerfile)) != filepath.Clean(*path) {
 			copySlice = append(copySlice, *dockerfile)
 		}
 
