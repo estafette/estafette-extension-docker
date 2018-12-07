@@ -125,6 +125,10 @@ func main() {
 			// write inline dockerfile contents to Dockerfile in path
 			targetDockerfile := filepath.Join(*path, "Dockerfile")
 
+			// read and log file for checking whether it was written correctly
+			log.Printf("ESTAFETTE_EXTENSION_INLINE:\n")
+			log.Println(*inlineDockerfile)
+
 			log.Printf("Writing inline Dockerfile to %v\n", targetDockerfile)
 			err := ioutil.WriteFile(targetDockerfile, []byte(*inlineDockerfile), 0644)
 			handleError(err)
