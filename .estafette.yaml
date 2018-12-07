@@ -38,7 +38,7 @@ stages:
     image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
     action: build
     container: docker-test
-    inline:
+    inline: |
       FROM docker:18.09.0
       LABEL maintainer="estafette.io"
       COPY ${ESTAFETTE_GIT_NAME} /
