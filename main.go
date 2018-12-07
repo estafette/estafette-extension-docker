@@ -129,9 +129,6 @@ func main() {
 			err := ioutil.WriteFile(targetDockerfile, []byte(*inlineDockerfile), 0644)
 			handleError(err)
 
-			// read and log file for checking whether it was written correctly
-			runCommand("cat", []string{targetDockerfile})
-
 			// ensure that any dockerfile param is ignored
 			*dockerfile = "Dockerfile"
 		} else {
