@@ -27,6 +27,11 @@ stages:
     image: extensions/docker:dev
     action: build
     container: docker
+    inline: |
+      FROM docker:18.09.0
+      LABEL maintainer="estafette.io"
+      COPY ${ESTAFETTE_GIT_NAME} /
+      ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
     repositories:
     - extensions
     path: ./publish
