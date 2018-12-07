@@ -18,7 +18,7 @@ version:
 stages:
   build:
     image: golang:1.11.2-alpine3.8
-    workDir: /go/src/github.com/estafette/${ESTAFETTE_LABEL_APP}
+    workDir: /go/src/${ESTAFETTE_GIT_SOURCE}/${ESTAFETTE_GIT_OWNER}/${ESTAFETTE_GIT_NAME}
     env:
       CGO_ENABLED: 0
       GOOS: linux
@@ -33,8 +33,19 @@ stages:
     repositories:
     - extensions
     path: ./publish
-    copy:
-    - Dockerfile
+
+  test:
+    image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+    action: build
+    container: docker-test
+    inline:
+      FROM docker:18.09.0
+      LABEL maintainer="estafette.io"
+      COPY ${ESTAFETTE_GIT_NAME} /
+      ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
+    repositories:
+    - extensions
+    path: ./publish
 
   push-to-docker-hub:
     image: extensions/docker:stable

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -25,14 +26,15 @@ var (
 
 var (
 	// flags
-	action       = kingpin.Flag("action", "Any of the following actions: build, push, tag.").Envar("ESTAFETTE_EXTENSION_ACTION").String()
-	repositories = kingpin.Flag("repositories", "List of the repositories the image needs to be pushed to or tagged in.").Envar("ESTAFETTE_EXTENSION_REPOSITORIES").String()
-	container    = kingpin.Flag("container", "Name of the container to build, defaults to app label if present.").Envar("ESTAFETTE_EXTENSION_CONTAINER").String()
-	tags         = kingpin.Flag("tags", "List of tags the image needs to receive.").Envar("ESTAFETTE_EXTENSION_TAGS").String()
-	path         = kingpin.Flag("path", "Directory to build docker container from, defaults to current working directory.").Default(".").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_PATH").String()
-	dockerfile   = kingpin.Flag("dockerfile", "Dockerfile to build, defaults to Dockerfile.").Default("Dockerfile").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_DOCKERFILE").String()
-	copy         = kingpin.Flag("copy", "List of files or directories to copy into the build directory.").Envar("ESTAFETTE_EXTENSION_COPY").String()
-	args         = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
+	action           = kingpin.Flag("action", "Any of the following actions: build, push, tag.").Envar("ESTAFETTE_EXTENSION_ACTION").String()
+	repositories     = kingpin.Flag("repositories", "List of the repositories the image needs to be pushed to or tagged in.").Envar("ESTAFETTE_EXTENSION_REPOSITORIES").String()
+	container        = kingpin.Flag("container", "Name of the container to build, defaults to app label if present.").Envar("ESTAFETTE_EXTENSION_CONTAINER").String()
+	tags             = kingpin.Flag("tags", "List of tags the image needs to receive.").Envar("ESTAFETTE_EXTENSION_TAGS").String()
+	path             = kingpin.Flag("path", "Directory to build docker container from, defaults to current working directory.").Default(".").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_PATH").String()
+	dockerfile       = kingpin.Flag("dockerfile", "Dockerfile to build, defaults to Dockerfile.").Default("Dockerfile").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_DOCKERFILE").String()
+	inlineDockerfile = kingpin.Flag("inline", "Dockerfile to build inlined.").Default("Dockerfile").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_INLINE").String()
+	copy             = kingpin.Flag("copy", "List of files or directories to copy into the build directory.").Envar("ESTAFETTE_EXTENSION_COPY").String()
+	args             = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
 )
 
 func main() {
@@ -119,9 +121,21 @@ func main() {
 		log.Printf("Ensuring build directory %v exists\n", *path)
 		runCommand("mkdir", []string{"-p", *path})
 
-		// add dockerfile to items to copy if path is non-default, and dockerfile isn't in the list to copy already, and if it is not there already
-		if *path != "." && !contains(copySlice, *dockerfile) && filepath.Clean(filepath.Dir(*dockerfile)) != filepath.Clean(*path) {
-			copySlice = append(copySlice, *dockerfile)
+		if *inlineDockerfile != "" {
+			// write inline dockerfile contents to Dockerfile in path
+			targetDockerfile := filepath.Join(*path, "Dockerfile")
+
+			log.Printf("Writing inline Dockerfile to %v\n", targetDockerfile)
+			err := ioutil.WriteFile(targetDockerfile, []byte(*inlineDockerfile), 0644)
+			handleError(err)
+
+			// ensure that any dockerfile param is ignored
+			*dockerfile = "Dockerfile"
+		} else {
+			// add dockerfile to items to copy if path is non-default, and dockerfile isn't in the list to copy already, and if it is not there already
+			if *path != "." && !contains(copySlice, *dockerfile) && filepath.Clean(filepath.Dir(*dockerfile)) != filepath.Clean(*path) {
+				copySlice = append(copySlice, *dockerfile)
+			}
 		}
 
 		// copy files/dirs from copySlice to build path
