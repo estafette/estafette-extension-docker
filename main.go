@@ -58,9 +58,11 @@ func main() {
 
 	// get api token from injected credentials
 	var credentials []ContainerRegistryCredentials
-	err := json.Unmarshal([]byte(*credentialsJSON), &credentials)
-	if err != nil {
-		log.Fatal("Failed unmarshalling injected credentials: ", err)
+	if *credentialsJSON != "" {
+		err := json.Unmarshal([]byte(*credentialsJSON), &credentials)
+		if err != nil {
+			log.Fatal("Failed unmarshalling injected credentials: ", err)
+		}
 	}
 
 	// validate inputs
