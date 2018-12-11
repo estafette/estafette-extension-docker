@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	contracts "github.com/estafette/estafette-ci-contracts"
 )
 
 var (
@@ -35,6 +34,8 @@ var (
 	inlineDockerfile = kingpin.Flag("inline", "Dockerfile to build inlined.").Envar("ESTAFETTE_EXTENSION_INLINE").String()
 	copy             = kingpin.Flag("copy", "List of files or directories to copy into the build directory.").Envar("ESTAFETTE_EXTENSION_COPY").String()
 	args             = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
+
+	credentialsJSON = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
 )
 
 func main() {
@@ -55,11 +56,11 @@ func main() {
 		*container = appLabel
 	}
 
-	// get private container registries credentials
-	credentialsJSON := os.Getenv("ESTAFETTE_CI_REPOSITORY_CREDENTIALS_JSON")
-	var credentials []*contracts.ContainerRepositoryCredentialConfig
-	if credentialsJSON != "" {
-		json.Unmarshal([]byte(credentialsJSON), &credentials)
+	// get api token from injected credentials
+	var credentials []ContainerRegistryCredentials
+	err := json.Unmarshal([]byte(*credentialsJSON), &credentials)
+	if err != nil {
+		log.Fatal("Failed unmarshalling injected credentials: ", err)
 	}
 
 	// validate inputs
@@ -321,14 +322,14 @@ func validateRepositories(repositories string) {
 	}
 }
 
-func getCredentialsForContainer(credentials []*contracts.ContainerRepositoryCredentialConfig, containerImage string) *contracts.ContainerRepositoryCredentialConfig {
+func getCredentialsForContainer(credentials []ContainerRegistryCredentials, containerImage string) *ContainerRegistryCredentials {
 	if credentials != nil {
-		for _, credentials := range credentials {
+		for _, credential := range credentials {
 			containerImageSlice := strings.Split(containerImage, "/")
 			containerRepo := strings.Join(containerImageSlice[:len(containerImageSlice)-1], "/")
 
-			if containerRepo == credentials.Repository {
-				return credentials
+			if containerRepo == credential.AdditionalProperties.Repository {
+				return &credential
 			}
 		}
 	}
@@ -336,20 +337,20 @@ func getCredentialsForContainer(credentials []*contracts.ContainerRepositoryCred
 	return nil
 }
 
-func loginIfRequired(credentials []*contracts.ContainerRepositoryCredentialConfig, containerImage string) {
+func loginIfRequired(credentials []ContainerRegistryCredentials, containerImage string) {
 	credential := getCredentialsForContainer(credentials, containerImage)
 	if credential != nil {
 
-		log.Printf("Logging in to repository %v for image %v\n", credential.Repository, containerImage)
+		log.Printf("Logging in to repository %v for image %v\n", credential.AdditionalProperties.Repository, containerImage)
 		loginArgs := []string{
 			"login",
 			"--username",
-			credential.Username,
+			credential.AdditionalProperties.Username,
 			"--password",
-			credential.Password,
+			credential.AdditionalProperties.Password,
 		}
 
-		repositorySlice := strings.Split(credential.Repository, "/")
+		repositorySlice := strings.Split(credential.AdditionalProperties.Repository, "/")
 		if len(repositorySlice) > 1 {
 			server := repositorySlice[0]
 			loginArgs = append(loginArgs, server)
