@@ -129,7 +129,17 @@ func main() {
 			targetDockerfile := filepath.Join(*path, "Dockerfile")
 
 			log.Printf("Writing inline Dockerfile to %v\n", targetDockerfile)
-			err := ioutil.WriteFile(targetDockerfile, []byte(os.ExpandEnv(*inlineDockerfile)), 0644)
+
+			expandedInlineDockerfile := os.Expand(*inlineDockerfile, func(envar string) string {
+				value := os.Getenv(envar)
+				if value != "" {
+					return value
+				}
+
+				return fmt.Sprintf("${%v}", envar)
+			})
+
+			err := ioutil.WriteFile(targetDockerfile, []byte(expandedInlineDockerfile), 0644)
 			handleError(err)
 
 			// ensure that any dockerfile param is ignored
