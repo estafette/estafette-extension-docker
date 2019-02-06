@@ -163,6 +163,11 @@ func main() {
 
 		// build docker image
 		log.Printf("Building docker image %v...\n", containerPath)
+
+		log.Println("")
+		runCommand("cat", []string{filepath.Join(*path, filepath.Base(*dockerfile))})
+		log.Println("")
+
 		args := []string{
 			"build",
 		}
