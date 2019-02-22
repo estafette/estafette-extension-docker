@@ -230,6 +230,8 @@ func main() {
 					targetContainerPath,
 				}
 				runCommand("docker", pushArgs)
+			} else {
+				log.Println("Skipping pushing version tag, because pushVersionTag is set to false; this make promoting a version to a tag at a later stage impossible!")
 			}
 
 			if !*pushVersionTag && len(tagsSlice) == 0 {
