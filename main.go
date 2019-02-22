@@ -34,6 +34,7 @@ var (
 	inlineDockerfile = kingpin.Flag("inline", "Dockerfile to build inlined.").Envar("ESTAFETTE_EXTENSION_INLINE").String()
 	copy             = kingpin.Flag("copy", "List of files or directories to copy into the build directory.").Envar("ESTAFETTE_EXTENSION_COPY").String()
 	args             = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
+	pushVersionTag   = kingpin.Flag("push-version-tag", "By default the version tag is pushed, so it can be promoted with a release, but if you don't want it you can disable it via this flag.").Default("true").Envar("ESTAFETTE_EXTENSION_PUSH_VERSION_TAG").Bool()
 
 	credentialsJSON = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
 )
@@ -221,13 +222,19 @@ func main() {
 
 			loginIfRequired(credentials, targetContainerPath)
 
-			// push container with default tag
-			log.Printf("Pushing container image %v\n", targetContainerPath)
-			pushArgs := []string{
-				"push",
-				targetContainerPath,
+			if *pushVersionTag {
+				// push container with default tag
+				log.Printf("Pushing container image %v\n", targetContainerPath)
+				pushArgs := []string{
+					"push",
+					targetContainerPath,
+				}
+				runCommand("docker", pushArgs)
 			}
-			runCommand("docker", pushArgs)
+
+			if !*pushVersionTag && len(tagsSlice) == 0 {
+				log.Fatal("When setting pushVersionTag to false you need at least one tag")
+			}
 
 			// push additional tags
 			for _, t := range tagsSlice {
