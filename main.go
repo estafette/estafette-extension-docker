@@ -36,6 +36,9 @@ var (
 	args             = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
 	pushVersionTag   = kingpin.Flag("push-version-tag", "By default the version tag is pushed, so it can be promoted with a release, but if you don't want it you can disable it via this flag.").Default("true").Envar("ESTAFETTE_EXTENSION_PUSH_VERSION_TAG").Bool()
 
+	gitName  = kingpin.Flag("git-name", "Repository name, used as application name if not passed explicitly and app label not being set.").Envar("ESTAFETTE_GIT_NAME").String()
+	appLabel = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
+
 	credentialsJSON = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
 )
 
@@ -52,9 +55,11 @@ func main() {
 	log.Printf("Starting estafette-extension-docker version %v...", version)
 
 	// set defaults
-	appLabel := os.Getenv("ESTAFETTE_LABEL_APP")
-	if *container == "" && appLabel != "" {
-		*container = appLabel
+	if *container == "" && *appLabel == "" && *gitName != "" {
+		*container = *gitName
+	}
+	if *container == "" && *appLabel != "" {
+		*container = *appLabel
 	}
 
 	// get api token from injected credentials
@@ -102,7 +107,7 @@ func main() {
 		// with defaults:
 
 		// path: .
-		// container: ${ESTAFETTE_LABEL_APP}
+		// container: ${ESTAFETTE_GIT_NAME}
 		// dockerfile: Dockerfile
 
 		// or use a more verbose version to override defaults
