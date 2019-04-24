@@ -52,6 +52,16 @@ stages:
     - extensions
     path: ./publish
 
+  test-from-private-registry:
+    image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+    action: build
+    container: hugo-test
+    inline: |
+      FROM estafette/hugo:master
+    repositories:
+    - extensions
+    path: ./publish-hugo
+
   push-to-docker-hub:
     image: extensions/docker:stable
     action: push
