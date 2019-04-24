@@ -163,15 +163,27 @@ func main() {
 			runCommand("cp", []string{"-r", c, *path})
 		}
 
-		// todo - check FROM statement to see whether login is required
+		// read dockerfile and find all images in FROM statements
+		dockerfilePath := filepath.Join(*path, filepath.Base(*dockerfile))
+		dockerfileContent, err := ioutil.ReadFile(dockerfilePath)
+		if err != nil {
+			handleError(err)
+		}
+		fromImagePaths, err := getFromImagePathsFromDockerfile(dockerfileContent)
+		if err != nil {
+			handleError(err)
+		}
+
+		// combine fromImagePaths and containerImage
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
-		loginIfRequired(credentials, containerPath)
+		allContainerImages := append(fromImagePaths, containerPath)
+		loginIfRequired(credentials, allContainerImages...)
 
 		// build docker image
 		log.Printf("Building docker image %v...\n", containerPath)
 
 		log.Println("")
-		runCommand("cat", []string{filepath.Join(*path, filepath.Base(*dockerfile))})
+		runCommand("cat", []string{dockerfilePath})
 		log.Println("")
 
 		args := []string{
@@ -353,42 +365,83 @@ func validateRepositories(repositories string) {
 	}
 }
 
-func getCredentialsForContainer(credentials []ContainerRegistryCredentials, containerImage string) *ContainerRegistryCredentials {
+func getCredentialsForContainers(credentials []ContainerRegistryCredentials, containerImages []string) map[string]*ContainerRegistryCredentials {
+
+	filteredCredentialsMap := make(map[string]*ContainerRegistryCredentials, 0)
+
 	if credentials != nil {
-		for _, credential := range credentials {
-			containerImageSlice := strings.Split(containerImage, "/")
+		// loop all container images
+		for _, ci := range containerImages {
+			containerImageSlice := strings.Split(ci, "/")
 			containerRepo := strings.Join(containerImageSlice[:len(containerImageSlice)-1], "/")
 
-			if containerRepo == credential.AdditionalProperties.Repository {
-				return &credential
+			if _, ok := filteredCredentialsMap[containerRepo]; ok {
+				// credentials for this repo were added before, check next container image
+				continue
+			}
+
+			// find the credentials matching the container image
+			for _, credential := range credentials {
+				if containerRepo == credential.AdditionalProperties.Repository {
+					// this one matches, add it to the map
+					filteredCredentialsMap[credential.AdditionalProperties.Repository] = &credential
+					break
+				}
 			}
 		}
 	}
 
-	return nil
+	return filteredCredentialsMap
 }
 
-func loginIfRequired(credentials []ContainerRegistryCredentials, containerImage string) {
-	credential := getCredentialsForContainer(credentials, containerImage)
-	if credential != nil {
+var (
+	imagesFromDockerFileRegex *regexp.Regexp
+)
 
-		log.Printf("Logging in to repository %v for image %v\n", credential.AdditionalProperties.Repository, containerImage)
-		loginArgs := []string{
-			"login",
-			"--username",
-			credential.AdditionalProperties.Username,
-			"--password",
-			credential.AdditionalProperties.Password,
+func getFromImagePathsFromDockerfile(dockerfileContent []byte) ([]string, error) {
+
+	containerImages := []string{}
+
+	if imagesFromDockerFileRegex == nil {
+		imagesFromDockerFileRegex = regexp.MustCompile(`(?im)^FROM\s*([^\s]+)(\s*AS\s[a-zA-Z0-9]+)?\s*$`)
+	}
+
+	matches := imagesFromDockerFileRegex.FindAllStringSubmatch(string(dockerfileContent), -1)
+
+	if len(matches) > 0 {
+		for _, m := range matches {
+			if len(m) > 1 {
+				// check if it's not an official docker hub image
+				if strings.Count(m[1], "/") != 0 {
+					containerImages = append(containerImages, m[1])
+				}
+			}
 		}
+	}
 
-		repositorySlice := strings.Split(credential.AdditionalProperties.Repository, "/")
-		if len(repositorySlice) > 1 {
-			server := repositorySlice[0]
-			loginArgs = append(loginArgs, server)
+	return containerImages, nil
+}
+
+func loginIfRequired(credentials []ContainerRegistryCredentials, containerImages ...string) {
+
+	// retrieve all credentials
+	filteredCredentialsMap := getCredentialsForContainers(credentials, containerImages)
+
+	if filteredCredentialsMap != nil {
+		for _, c := range filteredCredentialsMap {
+			log.Printf("Logging in to repository %v\n", c.AdditionalProperties.Repository)
+			loginArgs := []string{
+				"login",
+				"--username",
+				c.AdditionalProperties.Username,
+				"--password",
+				c.AdditionalProperties.Password,
+				c.AdditionalProperties.Repository,
+			}
+
+			err := exec.Command("docker", loginArgs...).Run()
+			handleError(err)
 		}
-
-		err := exec.Command("docker", loginArgs...).Run()
-		handleError(err)
 	}
 }
 
