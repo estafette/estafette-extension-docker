@@ -426,22 +426,29 @@ func loginIfRequired(credentials []ContainerRegistryCredentials, containerImages
 	// retrieve all credentials
 	filteredCredentialsMap := getCredentialsForContainers(credentials, containerImages)
 
-	log.Printf("Filter %v container-registry credentials to %v\n", len(credentials), len(filteredCredentialsMap))
+	log.Printf("Filtered %v container-registry credentials down to %v\n", len(credentials), len(filteredCredentialsMap))
 
 	if filteredCredentialsMap != nil {
 		for _, c := range filteredCredentialsMap {
-			log.Printf("Logging in to repository %v\n", c.AdditionalProperties.Repository)
-			loginArgs := []string{
-				"login",
-				"--username",
-				c.AdditionalProperties.Username,
-				"--password",
-				c.AdditionalProperties.Password,
-				c.AdditionalProperties.Repository,
-			}
+			if c != nil {
+				log.Printf("Logging in to repository '%v'\n", c.AdditionalProperties.Repository)
+				loginArgs := []string{
+					"login",
+					"--username",
+					c.AdditionalProperties.Username,
+					"--password",
+					c.AdditionalProperties.Password,
+				}
 
-			err := exec.Command("docker", loginArgs...).Run()
-			handleError(err)
+				repositorySlice := strings.Split(c.AdditionalProperties.Repository, "/")
+				if len(repositorySlice) > 1 {
+					server := repositorySlice[0]
+					loginArgs = append(loginArgs, server)
+				}
+
+				err := exec.Command("docker", loginArgs...).Run()
+				handleError(err)
+			}
 		}
 	}
 }
