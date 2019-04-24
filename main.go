@@ -166,13 +166,10 @@ func main() {
 		// read dockerfile and find all images in FROM statements
 		dockerfilePath := filepath.Join(*path, filepath.Base(*dockerfile))
 		dockerfileContent, err := ioutil.ReadFile(dockerfilePath)
-		if err != nil {
-			handleError(err)
-		}
+		handleError(err)
+
 		fromImagePaths, err := getFromImagePathsFromDockerfile(dockerfileContent)
-		if err != nil {
-			handleError(err)
-		}
+		handleError(err)
 
 		// combine fromImagePaths and containerImage
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
@@ -424,8 +421,12 @@ func getFromImagePathsFromDockerfile(dockerfileContent []byte) ([]string, error)
 
 func loginIfRequired(credentials []ContainerRegistryCredentials, containerImages ...string) {
 
+	log.Printf("Filtering credentials for images %v\n", containerImages)
+
 	// retrieve all credentials
 	filteredCredentialsMap := getCredentialsForContainers(credentials, containerImages)
+
+	log.Printf("Filter %v container-registry credentials to %v\n", len(credentials), len(filteredCredentialsMap))
 
 	if filteredCredentialsMap != nil {
 		for _, c := range filteredCredentialsMap {
