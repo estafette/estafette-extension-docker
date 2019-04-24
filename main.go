@@ -171,10 +171,20 @@ func main() {
 		fromImagePaths, err := getFromImagePathsFromDockerfile(dockerfileContent)
 		handleError(err)
 
-		// combine fromImagePaths and containerImage
+		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
+		for _, i := range fromImagePaths {
+			loginIfRequired(credentials, i)
+			log.Printf("Pulling container image %v\n", i)
+			pullArgs := []string{
+				"pull",
+				i,
+			}
+			runCommand("docker", pullArgs)
+		}
+
+		// login to registry for destination container image
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
-		allContainerImages := append(fromImagePaths, containerPath)
-		loginIfRequired(credentials, allContainerImages...)
+		loginIfRequired(credentials, containerPath)
 
 		// build docker image
 		log.Printf("Building docker image %v...\n", containerPath)
