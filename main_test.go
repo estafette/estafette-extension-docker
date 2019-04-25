@@ -306,7 +306,7 @@ func TestTidyBuildVersionAsTag(t *testing.T) {
 		buildVersion := "1.0.23-beta_B"
 
 		// act
-		tag := tidyBuildVersionAsTag(buildVersion)
+		tag := tidyTag(buildVersion)
 
 		assert.Equal(t, "1.0.23-beta_B", tag)
 	})
@@ -316,7 +316,7 @@ func TestTidyBuildVersionAsTag(t *testing.T) {
 		buildVersion := "0.0.187-release/release-x"
 
 		// act
-		tag := tidyBuildVersionAsTag(buildVersion)
+		tag := tidyTag(buildVersion)
 
 		assert.Equal(t, "0.0.187-release-release-x", tag)
 	})
