@@ -94,7 +94,7 @@ func main() {
 	}
 	estafetteBuildVersion := os.Getenv("ESTAFETTE_BUILD_VERSION")
 	estafetteBuildVersionAsTag := tidyTag(estafetteBuildVersion)
-	gitBranchAsTag := tidyTag(*gitBranch)
+	gitBranchAsTag := tidyTag(fmt.Sprintf("cache-%v", *gitBranch))
 
 	switch *action {
 	case "build":
