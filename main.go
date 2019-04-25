@@ -36,8 +36,9 @@ var (
 	args             = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
 	pushVersionTag   = kingpin.Flag("push-version-tag", "By default the version tag is pushed, so it can be promoted with a release, but if you don't want it you can disable it via this flag.").Default("true").Envar("ESTAFETTE_EXTENSION_PUSH_VERSION_TAG").Bool()
 
-	gitName  = kingpin.Flag("git-name", "Repository name, used as application name if not passed explicitly and app label not being set.").Envar("ESTAFETTE_GIT_NAME").String()
-	appLabel = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
+	gitName   = kingpin.Flag("git-name", "Repository name, used as application name if not passed explicitly and app label not being set.").Envar("ESTAFETTE_GIT_NAME").String()
+	gitBranch = kingpin.Flag("git-branch", "Git branch to tag image with for improved caching.").Envar("ESTAFETTE_GIT_BRANCH").String()
+	appLabel  = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
 
 	credentialsJSON = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
 )
@@ -92,7 +93,8 @@ func main() {
 		argsSlice = strings.Split(*args, ",")
 	}
 	estafetteBuildVersion := os.Getenv("ESTAFETTE_BUILD_VERSION")
-	estafetteBuildVersionAsTag := tidyBuildVersionAsTag(estafetteBuildVersion)
+	estafetteBuildVersionAsTag := tidyTag(estafetteBuildVersion)
+	gitBranchAsTag := tidyTag(*gitBranch)
 
 	switch *action {
 	case "build":
@@ -185,6 +187,15 @@ func main() {
 		// login to registry for destination container image
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 		loginIfRequired(credentials, containerPath)
+		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
+
+		log.Printf("Pulling docker image %v to use as cache during build...\n", cacheContainerPath)
+		pullArgs := []string{
+			"pull",
+			cacheContainerPath,
+		}
+		// ignore if it fails
+		runCommandExtended("docker", pullArgs)
 
 		// build docker image
 		log.Printf("Building docker image %v...\n", containerPath)
@@ -196,22 +207,23 @@ func main() {
 		args := []string{
 			"build",
 		}
+		args = append(args, "--tag", cacheContainerPath)
 		for _, r := range repositoriesSlice {
-			args = append(args, "--tag")
-			args = append(args, fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
+			args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
 			for _, t := range tagsSlice {
-				args = append(args, "--tag")
-				args = append(args, fmt.Sprintf("%v/%v:%v", r, *container, t))
+				if r == repositoriesSlice[0] && (t == estafetteBuildVersionAsTag || t == gitBranchAsTag) {
+					continue
+				}
+				args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, t))
 			}
 		}
 		for _, a := range argsSlice {
 			argValue := os.Getenv(a)
-			args = append(args, "--build-arg")
-			args = append(args, fmt.Sprintf("%v=%v", a, argValue))
+			args = append(args, "--build-arg", fmt.Sprintf("%v=%v", a, argValue))
 		}
 
-		args = append(args, "--file")
-		args = append(args, filepath.Join(*path, filepath.Base(*dockerfile)))
+		args = append(args, "--cache-from", cacheContainerPath)
+		args = append(args, "--file", filepath.Join(*path, filepath.Base(*dockerfile)))
 		args = append(args, *path)
 		runCommand("docker", args)
 
@@ -226,6 +238,7 @@ func main() {
 		// - dev
 
 		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
+		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
@@ -262,8 +275,19 @@ func main() {
 				log.Fatal("When setting pushVersionTag to false you need at least one tag")
 			}
 
+			log.Printf("Pushing cache container image %v\n", cacheContainerPath)
+			pushArgs := []string{
+				"push",
+				cacheContainerPath,
+			}
+			runCommand("docker", pushArgs)
+
 			// push additional tags
 			for _, t := range tagsSlice {
+
+				if r == repositoriesSlice[0] && (t == estafetteBuildVersionAsTag || t == gitBranchAsTag) {
+					continue
+				}
 
 				targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, t)
 
@@ -470,20 +494,33 @@ func handleError(err error) {
 }
 
 func runCommand(command string, args []string) {
+	err := runCommandExtended(command, args)
+	handleError(err)
+}
+
+func runCommandExtended(command string, args []string) error {
 	log.Printf("Running command '%v %v'...", command, strings.Join(args, " "))
 	cmd := exec.Command(command, args...)
 	cmd.Dir = "/estafette-work"
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
-	handleError(err)
+	return err
 }
 
-func tidyBuildVersionAsTag(buildVersion string) string {
+func tidyTag(tag string) string {
 	// A tag name must be valid ASCII and may contain lowercase and uppercase letters, digits, underscores, periods and dashes.
-	// A tag name may not start with a period or a dash and may contain a maximum of 128 characters.
-	reg := regexp.MustCompile(`[^a-zA-Z0-9_.\-]+`)
-	return reg.ReplaceAllString(buildVersion, "-")
+	tag = regexp.MustCompile(`[^a-zA-Z0-9_.\-]+`).ReplaceAllString(tag, "-")
+
+	// A tag name may not start with a period or a dash
+	tag = regexp.MustCompile(`$[_.\-]+`).ReplaceAllString(tag, "")
+
+	// and may contain a maximum of 128 characters.
+	if len(tag) > 128 {
+		tag = tag[:128]
+	}
+
+	return tag
 }
 
 func contains(values []string, value string) bool {
