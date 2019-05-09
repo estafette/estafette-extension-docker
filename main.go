@@ -179,6 +179,9 @@ func main() {
 			case mode.IsRegular():
 				err := cpy.Copy(c, filepath.Join(*path, c))
 				handleError(err)
+
+			default:
+				log.Fatalf("Unknown file mode %v for path %v", mode, c)
 			}
 		}
 
