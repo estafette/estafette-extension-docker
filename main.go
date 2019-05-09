@@ -168,8 +168,18 @@ func main() {
 		for _, c := range copySlice {
 			log.Printf("Copying %v to %v\n", c, *path)
 			// runCommand("cp", []string{"-r", c, *path})
-			err := cpy.Copy(c, *path)
+
+			fi, err := os.Stat(c)
 			handleError(err)
+			switch mode := fi.Mode(); {
+			case mode.IsDir():
+				err := cpy.Copy(c, *path)
+				handleError(err)
+
+			case mode.IsRegular():
+				err := cpy.Copy(c, filepath.Join(*path, c))
+				handleError(err)
+			}
 		}
 
 		// read dockerfile and find all images in FROM statements
