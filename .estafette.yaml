@@ -32,6 +32,7 @@ stages:
       LABEL maintainer="estafette.io"
 
       COPY ${ESTAFETTE_GIT_NAME} /
+      COPY ca-certificates.crt /etc/ssl/certs/
 
       ENV PATH="/dod:$PATH"
 
@@ -39,6 +40,8 @@ stages:
     repositories:
     - extensions
     path: ./publish
+    copy:
+    - /etc/ssl/certs/ca-certificates.crt
 
   test:
     image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
@@ -46,12 +49,18 @@ stages:
     container: docker-test
     inline: |
       FROM docker:18.09.0
+
       LABEL maintainer="estafette.io"
+
       COPY ${ESTAFETTE_GIT_NAME} /
+      COPY ca-certificates.crt /etc/ssl/certs/
+
       ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
     repositories:
     - extensions
     path: ./publish
+    copy:
+    - /etc/ssl/certs/ca-certificates.crt
 
   test-from-private-registry:
     image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
@@ -59,9 +68,13 @@ stages:
     container: hugo-test
     inline: |
       FROM estafette/hugo:master
+
+      COPY ca-certificates.crt /etc/ssl/certs/
     repositories:
     - extensions
     path: ./publish-hugo
+    copy:
+    - /etc/ssl/certs/ca-certificates.crt
 
   push-to-docker-hub:
     image: extensions/docker:stable
