@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
+	cpy "github.com/otiai10/copy"
 )
 
 var (
@@ -130,7 +131,11 @@ func main() {
 
 		// make build dir if it doesn't exist
 		log.Printf("Ensuring build directory %v exists\n", *path)
-		runCommand("mkdir", []string{"-p", *path})
+		// runCommand("mkdir", []string{"-p", *path})
+		if ok, _ := pathExists(*path); !ok {
+			err := os.MkdirAll(*path, os.ModePerm)
+			handleError(err)
+		}
 
 		if *inlineDockerfile != "" {
 			// write inline dockerfile contents to Dockerfile in path
@@ -162,7 +167,9 @@ func main() {
 		// copy files/dirs from copySlice to build path
 		for _, c := range copySlice {
 			log.Printf("Copying %v to %v\n", c, *path)
-			runCommand("cp", []string{"-r", c, *path})
+			// runCommand("cp", []string{"-r", c, *path})
+			err := cpy.Copy(c, *path)
+			handleError(err)
 		}
 
 		// read dockerfile and find all images in FROM statements
@@ -201,7 +208,10 @@ func main() {
 		log.Printf("Building docker image %v...\n", containerPath)
 
 		log.Println("")
-		runCommand("cat", []string{dockerfilePath})
+		// runCommand("cat", []string{dockerfilePath})
+		dockerfileContent, err = ioutil.ReadFile(dockerfilePath)
+		handleError(err)
+		fmt.Println(dockerfileContent)
 		log.Println("")
 
 		args := []string{
@@ -530,4 +540,15 @@ func contains(values []string, value string) bool {
 		}
 	}
 	return false
+}
+
+func pathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, err
 }
