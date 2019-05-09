@@ -177,7 +177,7 @@ func main() {
 				handleError(err)
 
 			case mode.IsRegular():
-				err := cpy.Copy(c, filepath.Join(*path, c))
+				err := cpy.Copy(c, filepath.Join(*path, filepath.Base(c)))
 				handleError(err)
 
 			default:
