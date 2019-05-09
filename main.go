@@ -211,7 +211,7 @@ func main() {
 		// runCommand("cat", []string{dockerfilePath})
 		dockerfileContent, err = ioutil.ReadFile(dockerfilePath)
 		handleError(err)
-		fmt.Println(dockerfileContent)
+		fmt.Println(string(dockerfileContent))
 		log.Println("")
 
 		args := []string{
