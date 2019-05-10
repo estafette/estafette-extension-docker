@@ -166,23 +166,31 @@ func main() {
 
 		// copy files/dirs from copySlice to build path
 		for _, c := range copySlice {
-			log.Printf("Copying %v to %v\n", c, *path)
 			// runCommand("cp", []string{"-r", c, *path})
 
 			fi, err := os.Stat(c)
 			handleError(err)
 			switch mode := fi.Mode(); {
 			case mode.IsDir():
+				log.Printf("Copying directory %v to %v\n", c, *path)
 				err := cpy.Copy(c, *path)
 				handleError(err)
 
 			case mode.IsRegular():
+				log.Printf("Copying file %v to %v\n", c, *path)
 				err := cpy.Copy(c, filepath.Join(*path, filepath.Base(c)))
 				handleError(err)
 
 			default:
 				log.Fatalf("Unknown file mode %v for path %v", mode, c)
 			}
+		}
+
+		// list directory content
+		files, err := ioutil.ReadDir(*path)
+		handleError(err)
+		for _, f := range files {
+			log.Printf(f.Name())
 		}
 
 		// read dockerfile and find all images in FROM statements
