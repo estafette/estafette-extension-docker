@@ -191,7 +191,11 @@ func main() {
 		files, err := ioutil.ReadDir(*path)
 		handleError(err)
 		for _, f := range files {
-			log.Printf(f.Name())
+			if f.IsDir() {
+				log.Printf("- %v/", f.Name())
+			} else {
+				log.Printf("- %v", f.Name())
+			}
 		}
 
 		// read dockerfile and find all images in FROM statements
