@@ -70,11 +70,13 @@ stages:
       FROM estafette/hugo:master
 
       COPY ca-certificates.crt /etc/ssl/certs/
+      COPY publish /publish
     repositories:
     - extensions
     path: ./publish-hugo
     copy:
     - /etc/ssl/certs/ca-certificates.crt
+    - publish
 
   push-to-docker-hub:
     image: extensions/docker:stable
