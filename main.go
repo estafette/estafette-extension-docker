@@ -173,7 +173,7 @@ func main() {
 			switch mode := fi.Mode(); {
 			case mode.IsDir():
 				log.Printf("Copying directory %v to %v\n", c, *path)
-				err := cpy.Copy(c, *path)
+				err := cpy.Copy(c, filepath.Join(*path, filepath.Base(c)))
 				handleError(err)
 
 			case mode.IsRegular():
@@ -187,6 +187,7 @@ func main() {
 		}
 
 		// list directory content
+		log.Printf("Listing directory %v content\n", *path)
 		files, err := ioutil.ReadDir(*path)
 		handleError(err)
 		for _, f := range files {
