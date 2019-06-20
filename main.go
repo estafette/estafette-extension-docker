@@ -184,7 +184,7 @@ func main() {
 		targetDockerfile := expandEnvironmentVariablesIfSet(sourceDockerfile)
 
 		log.Printf("Writing Dockerfile to %v...", targetDockerfilePath)
-		err := ioutil.WriteFile(targetDockerfile, []byte(targetDockerfile), 0644)
+		err := ioutil.WriteFile(targetDockerfilePath, []byte(targetDockerfile), 0644)
 		handleError(err)
 
 		// list directory content
