@@ -132,42 +132,13 @@ func main() {
 
 		// make build dir if it doesn't exist
 		log.Printf("Ensuring build directory %v exists\n", *path)
-		// runCommand("mkdir", []string{"-p", *path})
 		if ok, _ := pathExists(*path); !ok {
 			err := os.MkdirAll(*path, os.ModePerm)
 			handleError(err)
 		}
 
-		if *inlineDockerfile != "" {
-			// write inline dockerfile contents to Dockerfile in path
-			targetDockerfile := filepath.Join(*path, "Dockerfile")
-
-			log.Printf("Writing inline Dockerfile to %v\n", targetDockerfile)
-
-			expandedInlineDockerfile := os.Expand(*inlineDockerfile, func(envar string) string {
-				value := os.Getenv(envar)
-				if value != "" {
-					return value
-				}
-
-				return fmt.Sprintf("${%v}", envar)
-			})
-
-			err := ioutil.WriteFile(targetDockerfile, []byte(expandedInlineDockerfile), 0644)
-			handleError(err)
-
-			// ensure that any dockerfile param is ignored
-			*dockerfile = "Dockerfile"
-		} else {
-			// add dockerfile to items to copy if path is non-default, and dockerfile isn't in the list to copy already, and if it is not there already
-			if *path != "." && !contains(copySlice, *dockerfile) && filepath.Clean(filepath.Dir(*dockerfile)) != filepath.Clean(*path) {
-				copySlice = append(copySlice, *dockerfile)
-			}
-		}
-
 		// copy files/dirs from copySlice to build path
 		for _, c := range copySlice {
-			// runCommand("cp", []string{"-r", c, *path})
 
 			fi, err := os.Stat(c)
 			handleError(err)
@@ -187,6 +158,35 @@ func main() {
 			}
 		}
 
+		sourceDockerfilePath := ""
+		targetDockerfilePath := filepath.Join(*path, "Dockerfile")
+		sourceDockerfile := ""
+
+		// check in order of importance whether `inline` dockerfile is set, path to `dockerfile` is set or a dockerfile exist in /template directory (for building docker extension from this one)
+		if *inlineDockerfile != "" {
+			sourceDockerfile = *inlineDockerfile
+		} else if _, err := os.Stat(*dockerfile); !os.IsNotExist(err) {
+			sourceDockerfilePath = *dockerfile
+		} else if _, err := os.Stat("/template/Dockerfile"); !os.IsNotExist(err) {
+			sourceDockerfilePath = "/template/Dockerfile"
+		} else {
+			log.Fatal("No Dockerfile can be found; either use the `inline` property, set the path to a Dockerfile with the `dockerfile` property or inherit from the Docker extension and store a Dockerfile at /template/Dockerfile")
+		}
+
+		if sourceDockerfile == "" && sourceDockerfilePath != "" {
+			log.Printf("Reading dockerfile content from %v...", sourceDockerfilePath)
+			data, err := ioutil.ReadFile(sourceDockerfilePath)
+			handleError(err)
+			sourceDockerfile = string(data)
+		}
+
+		log.Print("Expanding environment variables in Dockerfile...")
+		targetDockerfile := expandEnvironmentVariablesIfSet(sourceDockerfile)
+
+		log.Printf("Writing Dockerfile to %v...", targetDockerfilePath)
+		err := ioutil.WriteFile(targetDockerfile, []byte(targetDockerfile), 0644)
+		handleError(err)
+
 		// list directory content
 		log.Printf("Listing directory %v content\n", *path)
 		files, err := ioutil.ReadDir(*path)
@@ -199,12 +199,8 @@ func main() {
 			}
 		}
 
-		// read dockerfile and find all images in FROM statements
-		dockerfilePath := filepath.Join(*path, filepath.Base(*dockerfile))
-		dockerfileContent, err := ioutil.ReadFile(dockerfilePath)
-		handleError(err)
-
-		fromImagePaths, err := getFromImagePathsFromDockerfile(dockerfileContent)
+		// find all images in FROM statements in dockerfile
+		fromImagePaths, err := getFromImagePathsFromDockerfile(targetDockerfile)
 		handleError(err)
 
 		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
@@ -235,10 +231,7 @@ func main() {
 		log.Printf("Building docker image %v...\n", containerPath)
 
 		log.Println("")
-		// runCommand("cat", []string{dockerfilePath})
-		dockerfileContent, err = ioutil.ReadFile(dockerfilePath)
-		handleError(err)
-		fmt.Println(string(dockerfileContent))
+		fmt.Println(targetDockerfile)
 		log.Println("")
 
 		args := []string{
@@ -469,7 +462,7 @@ var (
 	imagesFromDockerFileRegex *regexp.Regexp
 )
 
-func getFromImagePathsFromDockerfile(dockerfileContent []byte) ([]string, error) {
+func getFromImagePathsFromDockerfile(dockerfileContent string) ([]string, error) {
 
 	containerImages := []string{}
 
@@ -477,7 +470,7 @@ func getFromImagePathsFromDockerfile(dockerfileContent []byte) ([]string, error)
 		imagesFromDockerFileRegex = regexp.MustCompile(`(?im)^FROM\s*([^\s]+)(\s*AS\s[a-zA-Z0-9]+)?\s*$`)
 	}
 
-	matches := imagesFromDockerFileRegex.FindAllStringSubmatch(string(dockerfileContent), -1)
+	matches := imagesFromDockerFileRegex.FindAllStringSubmatch(dockerfileContent, -1)
 
 	if len(matches) > 0 {
 		for _, m := range matches {
@@ -581,4 +574,17 @@ func pathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return true, err
+}
+
+func expandEnvironmentVariablesIfSet(dockerfile string) string {
+
+	return os.Expand(dockerfile, func(envar string) string {
+		value := os.Getenv(envar)
+		if value != "" {
+			return value
+		}
+
+		return fmt.Sprintf("${%v}", envar)
+	})
+
 }

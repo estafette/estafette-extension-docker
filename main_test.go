@@ -232,7 +232,7 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 		dockerfileContent := "FROM nginx"
 
 		// act
-		containerImages, err := getFromImagePathsFromDockerfile([]byte(dockerfileContent))
+		containerImages, err := getFromImagePathsFromDockerfile(dockerfileContent)
 
 		assert.Nil(t, err)
 		assert.Equal(t, 0, len(containerImages))
@@ -243,7 +243,7 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 		dockerfileContent := "FROM prom/prometheus\n"
 
 		// act
-		containerImages, err := getFromImagePathsFromDockerfile([]byte(dockerfileContent))
+		containerImages, err := getFromImagePathsFromDockerfile(dockerfileContent)
 
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(containerImages))
@@ -255,7 +255,7 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 		dockerfileContent := "FROM prom/prometheus:latest"
 
 		// act
-		containerImages, err := getFromImagePathsFromDockerfile([]byte(dockerfileContent))
+		containerImages, err := getFromImagePathsFromDockerfile(dockerfileContent)
 
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(containerImages))
@@ -267,7 +267,7 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 		dockerfileContent := "FROM prom/prometheus:latest AS builder"
 
 		// act
-		containerImages, err := getFromImagePathsFromDockerfile([]byte(dockerfileContent))
+		containerImages, err := getFromImagePathsFromDockerfile(dockerfileContent)
 
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(containerImages))
@@ -279,7 +279,7 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 		dockerfileContent := "from prom/prometheus:latest as builder"
 
 		// act
-		containerImages, err := getFromImagePathsFromDockerfile([]byte(dockerfileContent))
+		containerImages, err := getFromImagePathsFromDockerfile(dockerfileContent)
 
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(containerImages))
@@ -291,7 +291,7 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 		dockerfileContent := "from prom/prometheus:latest as builder\nRUN somecommand\n\n\nFROM grafana/grafana:6.1.4\n\nCOPY --from=builder /app ."
 
 		// act
-		containerImages, err := getFromImagePathsFromDockerfile([]byte(dockerfileContent))
+		containerImages, err := getFromImagePathsFromDockerfile(dockerfileContent)
 
 		assert.Nil(t, err)
 		assert.Equal(t, 2, len(containerImages))
