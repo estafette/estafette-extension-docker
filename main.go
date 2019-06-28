@@ -256,7 +256,7 @@ func main() {
 		}
 
 		args = append(args, "--cache-from", cacheContainerPath)
-		args = append(args, "--file", filepath.Join(*path, filepath.Base(*dockerfile)))
+		args = append(args, "--file", targetDockerfilePath)
 		args = append(args, *path)
 		runCommand("docker", args)
 
