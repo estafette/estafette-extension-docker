@@ -31,11 +31,9 @@ stages:
     commands:
     - apk add git
     - wget -O v${TRIVY_VERSION}.tar.gz https://github.com/knqyf263/trivy/archive/v${TRIVY_VERSION}.tar.gz
-    - mkdir -p ./trivy-source
-    - tar zxvf v${TRIVY_VERSION}.tar.gz --directory ./trivy-source
-    - ls ./trivy-source
-    - cd ./trivy-source
-    - go build -a -installsuffix cgo -o ../publish/${ESTAFETTE_GIT_NAME} .
+    - tar zxvf v${TRIVY_VERSION}.tar.gz
+    - cd ./trivy-${TRIVY_VERSION}
+    - go build -a -installsuffix cgo -o ../publish/trivy .
 
   bake:
     image: extensions/docker:stable
