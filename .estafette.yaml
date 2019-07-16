@@ -44,6 +44,8 @@ stages:
       COPY trivy /
       COPY ca-certificates.crt /etc/ssl/certs/
 
+      RUN /trivy --refresh
+
       ENV PATH="/dod:$PATH"
 
       ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
