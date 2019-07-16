@@ -33,6 +33,7 @@ stages:
     - wget -O v${TRIVY_VERSION}.tar.gz https://github.com/knqyf263/trivy/archive/v${TRIVY_VERSION}.tar.gz
     - tar zxvf v${TRIVY_VERSION}.tar.gz
     - cd ./trivy-${TRIVY_VERSION}
+    - go test ./...
     - go build -a -installsuffix cgo -o ../publish/trivy .
 
   bake:
