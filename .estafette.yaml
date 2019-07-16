@@ -22,6 +22,15 @@ stages:
     - go test ./...
     - go build -a -installsuffix cgo -ldflags "-X main.version=${ESTAFETTE_BUILD_VERSION} -X main.revision=${ESTAFETTE_GIT_REVISION} -X main.branch=${ESTAFETTE_GIT_BRANCH} -X main.buildDate=${ESTAFETTE_BUILD_DATETIME}" -o ./publish/${ESTAFETTE_GIT_NAME} .
 
+  get-trivy-binary:
+    image: golang:1.12.5-alpine3.9
+    env:
+      TRIVY_VERSION: 0.1.4
+    commands:
+    - wget https://github.com/knqyf263/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
+    - tar zxvf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
+    - mv trivy ./publish
+
   bake:
     image: extensions/docker:stable
     action: build
@@ -32,6 +41,7 @@ stages:
       LABEL maintainer="estafette.io"
 
       COPY ${ESTAFETTE_GIT_NAME} /
+      COPY trivy /
       COPY ca-certificates.crt /etc/ssl/certs/
 
       ENV PATH="/dod:$PATH"
