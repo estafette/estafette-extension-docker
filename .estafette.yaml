@@ -30,7 +30,7 @@ stages:
       GOOS: linux
     commands:
     - wget -O v${TRIVY_VERSION}.tar.gz https://github.com/knqyf263/trivy/archive/v${TRIVY_VERSION}.tar.gz
-    - ls -latr
+    - mkdir -p ./trivy-source
     - tar zxvf v${TRIVY_VERSION}.tar.gz --directory ./trivy-source
     - cd ./trivy-source
     - go build -a -installsuffix cgo -o ../publish/${ESTAFETTE_GIT_NAME} .
