@@ -26,10 +26,13 @@ stages:
     image: golang:1.12.5-alpine3.9
     env:
       TRIVY_VERSION: 0.1.4
+      CGO_ENABLED: 0
+      GOOS: linux
     commands:
-    - wget https://github.com/knqyf263/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
-    - tar zxvf trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz
-    - mv trivy ./publish
+    - wget https://github.com/knqyf263/trivy/archive/v${TRIVY_VERSION}.tar.gz
+    - tar zxvf v${TRIVY_VERSION}.tar.gz --directory ./trivy-source
+    - cd ./trivy-source
+    - go build -a -installsuffix cgo -o ../publish/${ESTAFETTE_GIT_NAME} .
 
   bake:
     image: extensions/docker:stable
