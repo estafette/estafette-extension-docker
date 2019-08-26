@@ -37,6 +37,7 @@ var (
 	target           = kingpin.Flag("target", "Specify which stage to target for multi-stage build.").Envar("ESTAFETTE_EXTENSION_TARGET").String()
 	args             = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
 	pushVersionTag   = kingpin.Flag("push-version-tag", "By default the version tag is pushed, so it can be promoted with a release, but if you don't want it you can disable it via this flag.").Default("true").Envar("ESTAFETTE_EXTENSION_PUSH_VERSION_TAG").Bool()
+	noCache          = kingpin.Flag("no-cache", "Indicates cache shouldn't be used when building the image.").Default("false").Envar("ESTAFETTE_EXTENSION_NO_CACHE").Bool()
 
 	gitName   = kingpin.Flag("git-name", "Repository name, used as application name if not passed explicitly and app label not being set.").Envar("ESTAFETTE_GIT_NAME").String()
 	gitBranch = kingpin.Flag("git-branch", "Git branch to tag image with for improved caching.").Envar("ESTAFETTE_GIT_BRANCH").String()
@@ -236,6 +237,9 @@ func main() {
 
 		args := []string{
 			"build",
+		}
+		if *noCache {
+			args = append(args, "--no-cache")
 		}
 		args = append(args, "--tag", cacheContainerPath)
 		for _, r := range repositoriesSlice {

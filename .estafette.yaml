@@ -65,6 +65,7 @@ stages:
   test-from-private-registry:
     image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
     action: build
+    no-cache: true
     container: hugo-test
     inline: |
       FROM estafette/hugo:master
