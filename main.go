@@ -220,13 +220,15 @@ func main() {
 		loginIfRequired(credentials, containerPath)
 		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 
-		log.Printf("Pulling docker image %v to use as cache during build...\n", cacheContainerPath)
-		pullArgs := []string{
-			"pull",
-			cacheContainerPath,
+		if !*noCache {
+			log.Printf("Pulling docker image %v to use as cache during build...\n", cacheContainerPath)
+			pullArgs := []string{
+				"pull",
+				cacheContainerPath,
+			}
+			// ignore if it fails
+			runCommandExtended("docker", pullArgs)
 		}
-		// ignore if it fails
-		runCommandExtended("docker", pullArgs)
 
 		// build docker image
 		log.Printf("Building docker image %v...\n", containerPath)
@@ -259,7 +261,9 @@ func main() {
 			args = append(args, "--build-arg", fmt.Sprintf("%v=%v", a, argValue))
 		}
 
-		args = append(args, "--cache-from", cacheContainerPath)
+		if !*noCache {
+			args = append(args, "--cache-from", cacheContainerPath)
+		}
 		args = append(args, "--file", targetDockerfilePath)
 		args = append(args, *path)
 		runCommand("docker", args)
