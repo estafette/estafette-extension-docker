@@ -64,7 +64,7 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	} else {
-		log.Print(interfaces)
+		log.Printf("Listing network interfaces and their MTU: %v", interfaces)
 	}
 
 	// set defaults
