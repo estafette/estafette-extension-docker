@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,6 +59,13 @@ func main() {
 
 	// log startup message
 	log.Printf("Starting estafette-extension-docker version %v...", version)
+
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		log.Print(err)
+	} else {
+		log.Print(interfaces)
+	}
 
 	// set defaults
 	if *container == "" && *appLabel == "" && *gitName != "" {
