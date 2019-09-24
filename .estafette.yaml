@@ -95,6 +95,42 @@ stages:
       status == 'failed'
 
 releases:
+  windows:
+    builder:
+      os: windows
+    clone: true
+    stages:
+      bake:
+        image: extensions/docker:windowsservercore-1809
+        action: build
+        no-cache: true
+        expand-variables: false
+        container: docker
+        repositories:
+        - extensions
+        dockerfile: Dockerfile.windowsservercore-1809
+
+      test:
+        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+        action: build
+        container: docker-test
+        inline: |
+          FROM mcr.microsoft.com/windows/servercore:1809
+
+          RUN netsh interface ipv4 show interfaces
+        repositories:
+        - extensions
+
+      # push-to-docker-hub:
+      #   image: extensions/docker:windowsservercore-1809
+      #   action: push
+      #   container: docker
+      #   repositories:
+      #   - extensions
+      #   tags:
+      #   - windowsservercore-1809
+      #   pushVersionTag: false
+
   dev:
     triggers:
     - pipeline:
