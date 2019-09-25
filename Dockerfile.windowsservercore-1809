@@ -21,6 +21,6 @@ COPY --from=builder C:/gopath/estafette-extension-docker/estafette-extension-doc
 
 USER ContainerAdministrator
 
-ENV PATH="c:\dod:$PATH"
+ENV PATH="C:\dod;$PATH"
 
 ENTRYPOINT ["C:/estafette-extension-docker.exe"]
