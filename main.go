@@ -60,11 +60,13 @@ func main() {
 	// log startup message
 	log.Printf("Starting estafette-extension-docker version %v...", version)
 
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		log.Print(err)
-	} else {
-		log.Printf("Listing network interfaces and their MTU: %v", interfaces)
+	if runtime.GOOS == "windows" {
+		interfaces, err := net.Interfaces()
+		if err != nil {
+			log.Print(err)
+		} else {
+			log.Printf("Listing network interfaces and their MTU: %v", interfaces)
+		}
 	}
 
 	// set defaults

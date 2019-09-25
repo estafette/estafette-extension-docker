@@ -100,6 +100,16 @@ releases:
       os: windows
     clone: true
     stages:
+      build:
+        image: golang:1.13.0-windowsservercore-1809
+        env:
+          CGO_ENABLED: 0
+          GOOS: windows
+          GOARCH: amd64
+        commands:
+        - netsh interface ipv4 show interfaces
+        - go build -v -ldflags "-X main.app=$env:ESTAFETTE_GIT_NAME -X main.version=$env:ESTAFETTE_BUILD_VERSION -X main.revision=$env:ESTAFETTE_GIT_REVISION -X main.branch=$env:ESTAFETTE_GIT_BRANCH -X main.buildDate=$env:ESTAFETTE_BUILD_DATETIME" -o ./publish/$env:ESTAFETTE_GIT_NAME.exe
+
       bake:
         image: extensions/docker:windowsservercore-1809
         action: build
@@ -109,6 +119,7 @@ releases:
         repositories:
         - extensions
         dockerfile: Dockerfile.windowsservercore-1809
+        path: ./publish
 
       test:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
