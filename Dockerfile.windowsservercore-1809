@@ -8,12 +8,14 @@ COPY . C:/gopath/estafette-extension-docker
 
 WORKDIR C:/gopath/estafette-extension-docker
 
-RUN write-host 'Setting mtu size to 1410...'; \
+RUN white-host 'Listing network interfaces...'; \
+    netsh interface ipv4 show interfaces; \
+    write-host 'Setting mtu size to 1410...'; \
     Get-NetAdapter | Where-Object Name -like "*Ethernet*" | ForEach-Object { & netsh interface ipv4 set subinterface $_.InterfaceIndex mtu=1410 store=persistent }; \
     write-host 'Downloading modules...'; \
     go mod download; \
     write-host 'Compiling code...'; \
-    go build
+    go build -v
 
 FROM mcr.microsoft.com/windows/servercore:1809
 
