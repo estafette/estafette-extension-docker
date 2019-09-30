@@ -504,7 +504,7 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]string, error)
 		for _, m := range matches {
 			if len(m) > 1 {
 				// check if it's not an official docker hub image
-				if strings.Count(m[1], "/") != 0 {
+				if strings.Count(m[1], "/") != 0 && !strings.Contains(m[1], "$") {
 					containerImages = append(containerImages, m[1])
 				}
 			}
