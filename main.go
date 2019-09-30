@@ -334,12 +334,14 @@ func main() {
 				log.Fatal("When setting pushVersionTag to false you need at least one tag")
 			}
 
-			log.Printf("Pushing cache container image %v\n", cacheContainerPath)
-			pushArgs := []string{
-				"push",
-				cacheContainerPath,
+			if !*noCache {
+				log.Printf("Pushing cache container image %v\n", cacheContainerPath)
+				pushArgs := []string{
+					"push",
+					cacheContainerPath,
+				}
+				runCommand("docker", pushArgs)
 			}
-			runCommand("docker", pushArgs)
 
 			// push additional tags
 			for _, t := range tagsSlice {
