@@ -124,6 +124,7 @@ releases:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: build
         container: docker-test
+        versionTagSuffix: -suffix
         inline: |
           FROM mcr.microsoft.com/windows/servercore:1809
 
