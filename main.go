@@ -183,6 +183,7 @@ func main() {
 			sourceDockerfile = *inlineDockerfile
 		} else if _, err := os.Stat(*dockerfile); !os.IsNotExist(err) {
 			sourceDockerfilePath = *dockerfile
+			targetDockerfilePath = filepath.Join(*path, filepath.Base(*dockerfile))
 		} else if _, err := os.Stat("/template/Dockerfile"); !os.IsNotExist(err) {
 			sourceDockerfilePath = "/template/Dockerfile"
 		} else {
