@@ -41,6 +41,7 @@ var (
 	versionTagSuffix           = kingpin.Flag("version-tag-suffix", "A suffix to add to the version tag so promoting different containers originating from the same pipeline is possible.").Envar("ESTAFETTE_EXTENSION_VERSION_TAG_SUFFIX").String()
 	noCache                    = kingpin.Flag("no-cache", "Indicates cache shouldn't be used when building the image.").Default("false").Envar("ESTAFETTE_EXTENSION_NO_CACHE").Bool()
 	expandEnvironmentVariables = kingpin.Flag("expand-envvars", "By default environment variables get replaced in the Dockerfile, use this flag to disable that behaviour").Default("true").Envar("ESTAFETTE_EXTENSION_EXPAND_VARIABLES").Bool()
+	dontExpand                 = kingpin.Flag("dont-expand", "Comma separate list of environment variable names that should not be expanded").Default("PATH").Envar("ESTAFETTE_EXTENSION_DONT_EXPAND").String()
 
 	gitName   = kingpin.Flag("git-name", "Repository name, used as application name if not passed explicitly and app label not being set.").Envar("ESTAFETTE_GIT_NAME").String()
 	gitBranch = kingpin.Flag("git-branch", "Git branch to tag image with for improved caching.").Envar("ESTAFETTE_GIT_BRANCH").String()
@@ -199,7 +200,7 @@ func main() {
 		targetDockerfile := sourceDockerfile
 		if *expandEnvironmentVariables {
 			log.Print("Expanding environment variables in Dockerfile...")
-			targetDockerfile = expandEnvironmentVariablesIfSet(sourceDockerfile)
+			targetDockerfile = expandEnvironmentVariablesIfSet(sourceDockerfile, dontExpand)
 		}
 
 		log.Printf("Writing Dockerfile to %v...", targetDockerfilePath)
@@ -604,15 +605,22 @@ func pathExists(path string) (bool, error) {
 	return true, err
 }
 
-func expandEnvironmentVariablesIfSet(dockerfile string) string {
+func expandEnvironmentVariablesIfSet(dockerfile string, dontExpand *string) string {
 
 	return os.Expand(dockerfile, func(envar string) string {
-		value := os.Getenv(envar)
-		if value != "" {
-			return value
+
+		envarsToSkipForExpansion := []string{}
+		if dontExpand != nil {
+			envarsToSkipForExpansion = strings.Split(*dontExpand, ",")
+		}
+
+		if !contains(envarsToSkipForExpansion, envar) {
+			value := os.Getenv(envar)
+			if value != "" {
+				return value
+			}
 		}
 
 		return fmt.Sprintf("${%v}", envar)
 	})
-
 }
