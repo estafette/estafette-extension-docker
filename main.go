@@ -176,7 +176,7 @@ func main() {
 		}
 
 		sourceDockerfilePath := ""
-		targetDockerfilePath := filepath.Join(*path, "Dockerfile")
+		targetDockerfilePath := filepath.Join(*path, filepath.Base(*dockerfile))
 		sourceDockerfile := ""
 
 		// check in order of importance whether `inline` dockerfile is set, path to `dockerfile` is set or a dockerfile exist in /template directory (for building docker extension from this one)
