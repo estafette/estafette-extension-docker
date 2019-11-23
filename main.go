@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
+	foundation "github.com/estafette/estafette-foundation"
 	cpy "github.com/otiai10/copy"
 )
 
