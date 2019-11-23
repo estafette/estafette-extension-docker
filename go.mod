@@ -10,5 +10,5 @@ require (
 	github.com/otiai10/copy v1.0.1
 	github.com/otiai10/curr v0.0.0-20150429015615-9b4961190c95 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/testify v1.1.4
+	github.com/stretchr/testify v1.2.2
 )
