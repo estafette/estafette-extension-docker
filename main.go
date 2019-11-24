@@ -150,24 +150,24 @@ func main() {
 		log.Printf("Ensuring build directory %v exists\n", *path)
 		if ok, _ := pathExists(*path); !ok {
 			err := os.MkdirAll(*path, os.ModePerm)
-			handleError(err)
+			foundation.HandleError(err)
 		}
 
 		// copy files/dirs from copySlice to build path
 		for _, c := range copySlice {
 
 			fi, err := os.Stat(c)
-			handleError(err)
+			foundation.HandleError(err)
 			switch mode := fi.Mode(); {
 			case mode.IsDir():
 				log.Printf("Copying directory %v to %v\n", c, *path)
 				err := cpy.Copy(c, filepath.Join(*path, filepath.Base(c)))
-				handleError(err)
+				foundation.HandleError(err)
 
 			case mode.IsRegular():
 				log.Printf("Copying file %v to %v\n", c, *path)
 				err := cpy.Copy(c, filepath.Join(*path, filepath.Base(c)))
-				handleError(err)
+				foundation.HandleError(err)
 
 			default:
 				log.Fatalf("Unknown file mode %v for path %v", mode, c)
@@ -192,7 +192,7 @@ func main() {
 		if sourceDockerfile == "" && sourceDockerfilePath != "" {
 			log.Printf("Reading dockerfile content from %v...", sourceDockerfilePath)
 			data, err := ioutil.ReadFile(sourceDockerfilePath)
-			handleError(err)
+			foundation.HandleError(err)
 			sourceDockerfile = string(data)
 		}
 
@@ -204,12 +204,12 @@ func main() {
 
 		log.Printf("Writing Dockerfile to %v...", targetDockerfilePath)
 		err := ioutil.WriteFile(targetDockerfilePath, []byte(targetDockerfile), 0644)
-		handleError(err)
+		foundation.HandleError(err)
 
 		// list directory content
 		log.Printf("Listing directory %v content\n", *path)
 		files, err := ioutil.ReadDir(*path)
-		handleError(err)
+		foundation.HandleError(err)
 		for _, f := range files {
 			if f.IsDir() {
 				log.Printf("- %v/", f.Name())
@@ -220,7 +220,7 @@ func main() {
 
 		// find all images in FROM statements in dockerfile
 		fromImagePaths, err := getFromImagePathsFromDockerfile(targetDockerfile)
-		handleError(err)
+		foundation.HandleError(err)
 
 		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
 		for _, i := range fromImagePaths {
@@ -230,7 +230,7 @@ func main() {
 				"pull",
 				i,
 			}
-			runCommand("docker", pullArgs)
+			foundation.RunCommandWithArgs("docker", pullArgs)
 		}
 
 		// login to registry for destination container image
@@ -245,7 +245,7 @@ func main() {
 				cacheContainerPath,
 			}
 			// ignore if it fails
-			runCommandExtended("docker", pullArgs)
+			foundation.RunCommandWithArgsExtended("docker", pullArgs)
 		}
 
 		// build docker image
@@ -284,7 +284,7 @@ func main() {
 		}
 		args = append(args, "--file", targetDockerfilePath)
 		args = append(args, *path)
-		runCommand("docker", args)
+		foundation.RunCommandWithArgs("docker", args)
 
 	case "push":
 
@@ -313,7 +313,7 @@ func main() {
 					targetContainerPath,
 				}
 				err := exec.Command("docker", tagArgs...).Run()
-				handleError(err)
+				foundation.HandleError(err)
 			}
 
 			loginIfRequired(credentials, targetContainerPath)
@@ -325,7 +325,7 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				runCommand("docker", pushArgs)
+				foundation.RunCommandWithArgs("docker", pushArgs)
 			} else {
 				log.Println("Skipping pushing version tag, because pushVersionTag is set to false; this make promoting a version to a tag at a later stage impossible!")
 			}
@@ -340,7 +340,7 @@ func main() {
 					"push",
 					cacheContainerPath,
 				}
-				runCommand("docker", pushArgs)
+				foundation.RunCommandWithArgs("docker", pushArgs)
 			}
 
 			// push additional tags
@@ -359,7 +359,7 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				runCommand("docker", tagArgs)
+				foundation.RunCommandWithArgs("docker", tagArgs)
 
 				loginIfRequired(credentials, targetContainerPath)
 
@@ -368,7 +368,7 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				runCommand("docker", pushArgs)
+				foundation.RunCommandWithArgs("docker", pushArgs)
 			}
 		}
 
@@ -393,7 +393,7 @@ func main() {
 			"pull",
 			sourceContainerPath,
 		}
-		runCommand("docker", pullArgs)
+		foundation.RunCommandWithArgs("docker", pullArgs)
 
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
@@ -408,7 +408,7 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				runCommand("docker", tagArgs)
+				foundation.RunCommandWithArgs("docker", tagArgs)
 
 				loginIfRequired(credentials, targetContainerPath)
 
@@ -418,7 +418,7 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				runCommand("docker", pushArgs)
+				foundation.RunCommandWithArgs("docker", pushArgs)
 			}
 
 			// push additional tags
@@ -433,7 +433,7 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				runCommand("docker", tagArgs)
+				foundation.RunCommandWithArgs("docker", tagArgs)
 
 				loginIfRequired(credentials, targetContainerPath)
 
@@ -442,7 +442,7 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				runCommand("docker", pushArgs)
+				foundation.RunCommandWithArgs("docker", pushArgs)
 			}
 		}
 
@@ -542,31 +542,10 @@ func loginIfRequired(credentials []ContainerRegistryCredentials, containerImages
 				}
 
 				err := exec.Command("docker", loginArgs...).Run()
-				handleError(err)
+				foundation.HandleError(err)
 			}
 		}
 	}
-}
-
-func handleError(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func runCommand(command string, args []string) {
-	err := runCommandExtended(command, args)
-	handleError(err)
-}
-
-func runCommandExtended(command string, args []string) error {
-	log.Printf("Running command '%v %v'...", command, strings.Join(args, " "))
-	cmd := exec.Command(command, args...)
-	cmd.Dir = "/estafette-work"
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	return err
 }
 
 func tidyTag(tag string) string {
