@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -16,6 +16,7 @@ import (
 	"github.com/alecthomas/kingpin"
 	foundation "github.com/estafette/estafette-foundation"
 	cpy "github.com/otiai10/copy"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -61,12 +62,15 @@ func main() {
 	// init log format from envvar ESTAFETTE_LOG_FORMAT
 	foundation.InitLoggingFromEnv(appgroup, app, version, branch, revision, buildDate)
 
+	// create context to cancel commands on sigterm
+	ctx := foundation.InitCancellationContext(context.Background())
+
 	if runtime.GOOS == "windows" {
 		interfaces, err := net.Interfaces()
 		if err != nil {
 			log.Print(err)
 		} else {
-			log.Printf("Listing network interfaces and their MTU: %v", interfaces)
+			log.Info().Msgf("Listing network interfaces and their MTU: %v", interfaces)
 		}
 	}
 
@@ -83,7 +87,7 @@ func main() {
 	if *credentialsJSON != "" {
 		err := json.Unmarshal([]byte(*credentialsJSON), &credentials)
 		if err != nil {
-			log.Fatal("Failed unmarshalling injected credentials: ", err)
+			log.Fatal().Err(err).Msg("Failed unmarshalling injected credentials")
 		}
 	}
 
@@ -147,7 +151,7 @@ func main() {
 		// - SOME_BUILD_ARG_ENVVAR
 
 		// make build dir if it doesn't exist
-		log.Printf("Ensuring build directory %v exists\n", *path)
+		log.Info().Msgf("Ensuring build directory %v exists", *path)
 		if ok, _ := pathExists(*path); !ok {
 			err := os.MkdirAll(*path, os.ModePerm)
 			foundation.HandleError(err)
@@ -160,17 +164,17 @@ func main() {
 			foundation.HandleError(err)
 			switch mode := fi.Mode(); {
 			case mode.IsDir():
-				log.Printf("Copying directory %v to %v\n", c, *path)
+				log.Info().Msgf("Copying directory %v to %v", c, *path)
 				err := cpy.Copy(c, filepath.Join(*path, filepath.Base(c)))
 				foundation.HandleError(err)
 
 			case mode.IsRegular():
-				log.Printf("Copying file %v to %v\n", c, *path)
+				log.Info().Msgf("Copying file %v to %v", c, *path)
 				err := cpy.Copy(c, filepath.Join(*path, filepath.Base(c)))
 				foundation.HandleError(err)
 
 			default:
-				log.Fatalf("Unknown file mode %v for path %v", mode, c)
+				log.Fatal().Msgf("Unknown file mode %v for path %v", mode, c)
 			}
 		}
 
@@ -186,11 +190,11 @@ func main() {
 		} else if _, err := os.Stat("/template/Dockerfile"); !os.IsNotExist(err) {
 			sourceDockerfilePath = "/template/Dockerfile"
 		} else {
-			log.Fatal("No Dockerfile can be found; either use the `inline` property, set the path to a Dockerfile with the `dockerfile` property or inherit from the Docker extension and store a Dockerfile at /template/Dockerfile")
+			log.Fatal().Msg("No Dockerfile can be found; either use the `inline` property, set the path to a Dockerfile with the `dockerfile` property or inherit from the Docker extension and store a Dockerfile at /template/Dockerfile")
 		}
 
 		if sourceDockerfile == "" && sourceDockerfilePath != "" {
-			log.Printf("Reading dockerfile content from %v...", sourceDockerfilePath)
+			log.Info().Msgf("Reading dockerfile content from %v...", sourceDockerfilePath)
 			data, err := ioutil.ReadFile(sourceDockerfilePath)
 			foundation.HandleError(err)
 			sourceDockerfile = string(data)
@@ -202,19 +206,19 @@ func main() {
 			targetDockerfile = expandEnvironmentVariablesIfSet(sourceDockerfile, dontExpand)
 		}
 
-		log.Printf("Writing Dockerfile to %v...", targetDockerfilePath)
+		log.Info().Msgf("Writing Dockerfile to %v...", targetDockerfilePath)
 		err := ioutil.WriteFile(targetDockerfilePath, []byte(targetDockerfile), 0644)
 		foundation.HandleError(err)
 
 		// list directory content
-		log.Printf("Listing directory %v content\n", *path)
+		log.Info().Msgf("Listing directory %v content", *path)
 		files, err := ioutil.ReadDir(*path)
 		foundation.HandleError(err)
 		for _, f := range files {
 			if f.IsDir() {
-				log.Printf("- %v/", f.Name())
+				log.Info().Msgf("- %v/", f.Name())
 			} else {
-				log.Printf("- %v", f.Name())
+				log.Info().Msgf("- %v", f.Name())
 			}
 		}
 
@@ -225,12 +229,12 @@ func main() {
 		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
 		for _, i := range fromImagePaths {
 			loginIfRequired(credentials, i)
-			log.Printf("Pulling container image %v\n", i)
+			log.Info().Msgf("Pulling container image %v", i)
 			pullArgs := []string{
 				"pull",
 				i,
 			}
-			foundation.RunCommandWithArgs("docker", pullArgs)
+			foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
 		}
 
 		// login to registry for destination container image
@@ -239,21 +243,21 @@ func main() {
 		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 
 		if !*noCache {
-			log.Printf("Pulling docker image %v to use as cache during build...\n", cacheContainerPath)
+			log.Info().Msgf("Pulling docker image %v to use as cache during build...", cacheContainerPath)
 			pullArgs := []string{
 				"pull",
 				cacheContainerPath,
 			}
 			// ignore if it fails
-			foundation.RunCommandWithArgsExtended("docker", pullArgs)
+			foundation.RunCommandWithArgsExtended(ctx, "docker", pullArgs)
 		}
 
 		// build docker image
-		log.Printf("Building docker image %v...\n", containerPath)
+		log.Info().Msgf("Building docker image %v...", containerPath)
 
-		log.Println("")
+		log.Info().Msg("")
 		fmt.Println(targetDockerfile)
-		log.Println("")
+		log.Info().Msg("")
 
 		args := []string{
 			"build",
@@ -284,7 +288,7 @@ func main() {
 		}
 		args = append(args, "--file", targetDockerfilePath)
 		args = append(args, *path)
-		foundation.RunCommandWithArgs("docker", args)
+		foundation.RunCommandWithArgs(ctx, "docker", args)
 
 	case "push":
 
@@ -306,7 +310,7 @@ func main() {
 
 			if i > 0 {
 				// tag container with default tag (it already exists for the first repository)
-				log.Printf("Tagging container image %v\n", targetContainerPath)
+				log.Info().Msgf("Tagging container image %v", targetContainerPath)
 				tagArgs := []string{
 					"tag",
 					sourceContainerPath,
@@ -320,27 +324,27 @@ func main() {
 
 			if *pushVersionTag {
 				// push container with default tag
-				log.Printf("Pushing container image %v\n", targetContainerPath)
+				log.Info().Msgf("Pushing container image %v", targetContainerPath)
 				pushArgs := []string{
 					"push",
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs("docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
 			} else {
-				log.Println("Skipping pushing version tag, because pushVersionTag is set to false; this make promoting a version to a tag at a later stage impossible!")
+				log.Info().Msg("Skipping pushing version tag, because pushVersionTag is set to false; this make promoting a version to a tag at a later stage impossible!")
 			}
 
 			if !*pushVersionTag && len(tagsSlice) == 0 {
-				log.Fatal("When setting pushVersionTag to false you need at least one tag")
+				log.Fatal().Msg("When setting pushVersionTag to false you need at least one tag")
 			}
 
 			if !*noCache {
-				log.Printf("Pushing cache container image %v\n", cacheContainerPath)
+				log.Info().Msgf("Pushing cache container image %v", cacheContainerPath)
 				pushArgs := []string{
 					"push",
 					cacheContainerPath,
 				}
-				foundation.RunCommandWithArgs("docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
 			}
 
 			// push additional tags
@@ -353,22 +357,22 @@ func main() {
 				targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, t)
 
 				// tag container with additional tag
-				log.Printf("Tagging container image %v\n", targetContainerPath)
+				log.Info().Msgf("Tagging container image %v", targetContainerPath)
 				tagArgs := []string{
 					"tag",
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs("docker", tagArgs)
+				foundation.RunCommandWithArgs(ctx, "docker", tagArgs)
 
 				loginIfRequired(credentials, targetContainerPath)
 
-				log.Printf("Pushing container image %v\n", targetContainerPath)
+				log.Info().Msgf("Pushing container image %v", targetContainerPath)
 				pushArgs := []string{
 					"push",
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs("docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
 			}
 		}
 
@@ -388,12 +392,12 @@ func main() {
 		loginIfRequired(credentials, sourceContainerPath)
 
 		// pull source container first
-		log.Printf("Pulling container image %v\n", sourceContainerPath)
+		log.Info().Msgf("Pulling container image %v", sourceContainerPath)
 		pullArgs := []string{
 			"pull",
 			sourceContainerPath,
 		}
-		foundation.RunCommandWithArgs("docker", pullArgs)
+		foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
 
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
@@ -402,23 +406,23 @@ func main() {
 
 			if i > 0 {
 				// tag container with default tag
-				log.Printf("Tagging container image %v\n", targetContainerPath)
+				log.Info().Msgf("Tagging container image %v", targetContainerPath)
 				tagArgs := []string{
 					"tag",
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs("docker", tagArgs)
+				foundation.RunCommandWithArgs(ctx, "docker", tagArgs)
 
 				loginIfRequired(credentials, targetContainerPath)
 
 				// push container with default tag
-				log.Printf("Pushing container image %v\n", targetContainerPath)
+				log.Info().Msgf("Pushing container image %v", targetContainerPath)
 				pushArgs := []string{
 					"push",
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs("docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
 			}
 
 			// push additional tags
@@ -427,33 +431,33 @@ func main() {
 				targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, t)
 
 				// tag container with additional tag
-				log.Printf("Tagging container image %v\n", targetContainerPath)
+				log.Info().Msgf("Tagging container image %v", targetContainerPath)
 				tagArgs := []string{
 					"tag",
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs("docker", tagArgs)
+				foundation.RunCommandWithArgs(ctx, "docker", tagArgs)
 
 				loginIfRequired(credentials, targetContainerPath)
 
-				log.Printf("Pushing container image %v\n", targetContainerPath)
+				log.Info().Msgf("Pushing container image %v", targetContainerPath)
 				pushArgs := []string{
 					"push",
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs("docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
 			}
 		}
 
 	default:
-		log.Fatal("Set `command: <command>` on this step to build, push or tag")
+		log.Fatal().Msg("Set `command: <command>` on this step to build, push or tag")
 	}
 }
 
 func validateRepositories(repositories string) {
 	if repositories == "" {
-		log.Fatal("Set `repositories:` to list at least one `- <repository>` (for example like `- extensions`)")
+		log.Fatal().Msg("Set `repositories:` to list at least one `- <repository>` (for example like `- extensions`)")
 	}
 }
 
@@ -516,17 +520,17 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]string, error)
 
 func loginIfRequired(credentials []ContainerRegistryCredentials, containerImages ...string) {
 
-	log.Printf("Filtering credentials for images %v\n", containerImages)
+	log.Info().Msgf("Filtering credentials for images %v", containerImages)
 
 	// retrieve all credentials
 	filteredCredentialsMap := getCredentialsForContainers(credentials, containerImages)
 
-	log.Printf("Filtered %v container-registry credentials down to %v\n", len(credentials), len(filteredCredentialsMap))
+	log.Info().Msgf("Filtered %v container-registry credentials down to %v", len(credentials), len(filteredCredentialsMap))
 
 	if filteredCredentialsMap != nil {
 		for _, c := range filteredCredentialsMap {
 			if c != nil {
-				log.Printf("Logging in to repository '%v'\n", c.AdditionalProperties.Repository)
+				log.Info().Msgf("Logging in to repository '%v'", c.AdditionalProperties.Repository)
 				loginArgs := []string{
 					"login",
 					"--username",
