@@ -463,7 +463,15 @@ func main() {
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
-		foundation.RunCommandWithArgs(ctx, "/trivy", []string{"--light", "--no-progress", "--exit-code", "1", "--cache-dir", "/trivy-cache", containerPath})
+		err := foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--light", "--no-progress", "--exit-code", "1", "--cache-dir", "/trivy-cache", containerPath})
+		if err != nil {
+			if strings.Contains(err.Error(), "Unknown OS") {
+				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
+				log.Warn().Err(err).Msg("Ignoring Unknown OS error")
+			} else {
+				foundation.HandleError(err)
+			}
+		}
 
 	default:
 		log.Fatal().Msg("Set `command: <command>` on this step to build, push or tag")
