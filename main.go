@@ -455,6 +455,7 @@ func main() {
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		log.Info().Msgf("Inspecting container image %v layers...", containerPath)
+		loginIfRequired(credentials, containerPath)
 		os.Setenv("CI", "true")
 		foundation.RunCommandWithArgs(ctx, "/dive", []string{containerPath})
 
