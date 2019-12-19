@@ -467,7 +467,7 @@ func main() {
 		if err != nil {
 			if strings.EqualFold(err.Error(), "exit status 1") {
 				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
-				log.Warn().Err(err).Msg("Ignoring Unknown OS error")
+				log.Warn().Msg("Ignoring Unknown OS error")
 			} else {
 				foundation.HandleError(err)
 			}
