@@ -28,8 +28,8 @@ stages:
     inline: |
       FROM alpine:3.10
 
-      RUN wget -qO- https://github.com/wagoodman/dive/releases/download/v0.9.1/dive_0.9.1_linux_amd64.tar.gz | \
-          tar xvz - -C / \
+      RUN wget -O- https://github.com/wagoodman/dive/releases/download/v0.9.1/dive_0.9.1_linux_amd64.tar.gz | \
+          tar -xzf - -C / \
           && /dive version
 
       FROM scratch
