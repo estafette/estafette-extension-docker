@@ -458,6 +458,13 @@ func main() {
 		os.Setenv("CI", "true")
 		foundation.RunCommandWithArgs(ctx, "/dive", []string{containerPath})
 
+	case "trivy":
+
+		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
+
+		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
+		foundation.RunCommandWithArgs(ctx, "/trivy", []string{"--light", "--no-progress", "--exit-code", "1", containerPath})
+
 	default:
 		log.Fatal().Msg("Set `command: <command>` on this step to build, push or tag")
 	}

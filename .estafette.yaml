@@ -32,6 +32,11 @@ stages:
           tar -xzf - -C / \
           && /dive version
 
+      RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v0.3.1/trivy_0.3.1_Linux-64bit.tar.gz | \
+          tar -xzf - -C / \
+          && /trivy --version \
+          && trivy --light --download-db-only
+
       FROM scratch
 
       LABEL maintainer="estafette.io"
@@ -39,6 +44,7 @@ stages:
       COPY ${ESTAFETTE_GIT_NAME} /
       COPY ca-certificates.crt /etc/ssl/certs/
       COPY --from=0 /dive /dive
+      COPY --from=0 /trivy /trivy
 
       ENV PATH="/dod:$PATH" \
           ESTAFETTE_LOG_FORMAT="console"
@@ -89,6 +95,13 @@ stages:
   test-dive:
     image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
     action: dive
+    container: docker
+    repositories:
+    - extensions
+
+  test-trivy:
+    image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+    action: trivy
     container: docker
     repositories:
     - extensions
