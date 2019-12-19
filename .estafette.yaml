@@ -35,7 +35,7 @@ stages:
       RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v0.3.1/trivy_0.3.1_Linux-64bit.tar.gz | \
           tar -xzf - -C / \
           && /trivy --version \
-          && /trivy --light --download-db-only
+          && /trivy --light --download-db-only --cache-dir /trivy-cache
 
       FROM scratch
 
@@ -45,6 +45,7 @@ stages:
       COPY ca-certificates.crt /etc/ssl/certs/
       COPY --from=0 /dive /dive
       COPY --from=0 /trivy /trivy
+      COPY --from=0 /trivy-cache /trivy-cache
 
       ENV PATH="/dod:$PATH" \
           ESTAFETTE_LOG_FORMAT="console"
