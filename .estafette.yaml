@@ -105,9 +105,10 @@ stages:
       test-trivy:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: trivy
-        container: docker
+        container: estafette-ci-builder
+        tag: stable
         repositories:
-        - extensions
+        - estafette
 
   push-to-docker-hub:
     image: extensions/docker:stable
