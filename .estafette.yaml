@@ -82,6 +82,12 @@ stages:
     - /etc/ssl/certs/ca-certificates.crt
     - publish
 
+  test-dive:
+    image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+    action: dive
+    repositories:
+    - extensions
+
   push-to-docker-hub:
     image: extensions/docker:stable
     action: push
