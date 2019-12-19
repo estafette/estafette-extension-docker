@@ -450,6 +450,14 @@ func main() {
 			}
 		}
 
+	case "dive":
+
+		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
+
+		log.Info().Msgf("Inspecting container image %v layers...", containerPath)
+		os.Setenv("CI", "true")
+		foundation.RunCommandWithArgs(ctx, "/dive", []string{containerPath})
+
 	default:
 		log.Fatal().Msg("Set `command: <command>` on this step to build, push or tag")
 	}
