@@ -56,55 +56,57 @@ stages:
     copy:
     - /etc/ssl/certs/ca-certificates.crt
 
-  test:
-    image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
-    action: build
-    container: docker-test
-    inline: |
-      FROM docker:18.09.0
+  tests:
+    parallelStages:
+      test-build:
+        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+        action: build
+        container: docker-test
+        inline: |
+          FROM docker:18.09.0
 
-      LABEL maintainer="estafette.io"
+          LABEL maintainer="estafette.io"
 
-      COPY ${ESTAFETTE_GIT_NAME} /
-      COPY ca-certificates.crt /etc/ssl/certs/
+          COPY ${ESTAFETTE_GIT_NAME} /
+          COPY ca-certificates.crt /etc/ssl/certs/
 
-      ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
-    repositories:
-    - extensions
-    path: ./publish
-    copy:
-    - /etc/ssl/certs/ca-certificates.crt
+          ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
+        repositories:
+        - extensions
+        path: ./publish
+        copy:
+        - /etc/ssl/certs/ca-certificates.crt
 
-  test-from-private-registry:
-    image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
-    action: build
-    no-cache: true
-    container: hugo-test
-    inline: |
-      FROM estafette/hugo:master
+      test-build-from-private-registry:
+        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+        action: build
+        no-cache: true
+        container: hugo-test
+        inline: |
+          FROM estafette/hugo:master
 
-      COPY ca-certificates.crt /etc/ssl/certs/
-      COPY publish /publish
-    repositories:
-    - extensions
-    path: ./publish-hugo
-    copy:
-    - /etc/ssl/certs/ca-certificates.crt
-    - publish
+          COPY ca-certificates.crt /etc/ssl/certs/
+          COPY publish /publish
+        repositories:
+        - extensions
+        path: ./publish-hugo
+        copy:
+        - /etc/ssl/certs/ca-certificates.crt
+        - publish
 
-  test-dive:
-    image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
-    action: dive
-    container: docker
-    repositories:
-    - extensions
+      test-dive:
+        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+        action: dive
+        container: docker
+        repositories:
+        - extensions
 
-  test-trivy:
-    image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
-    action: trivy
-    container: docker
-    repositories:
-    - extensions
+      test-trivy:
+        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+        action: trivy
+        container: docker
+        repositories:
+        - extensions
 
   push-to-docker-hub:
     image: extensions/docker:stable
