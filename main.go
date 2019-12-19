@@ -456,6 +456,8 @@ func main() {
 
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"images"})
 
+		foundation.RunCommandWithArgs(ctx, "docker", []string{"inspect", containerPath})
+
 		log.Info().Msgf("Inspecting container image %v layers...", containerPath)
 		os.Setenv("CI", "true")
 		foundation.RunCommandWithArgs(ctx, "/dive", []string{containerPath})
