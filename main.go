@@ -463,7 +463,7 @@ func main() {
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
-		err := foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--light", "--no-progress", "--exit-code", "15", "--cache-dir", "/trivy-cache", containerPath})
+		err := foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--light", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", containerPath})
 		if err != nil {
 			if strings.EqualFold(err.Error(), "exit status 1") {
 				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
