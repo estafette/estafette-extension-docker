@@ -57,6 +57,22 @@ stages:
     copy:
     - /etc/ssl/certs/ca-certificates.crt
 
+  check-container:
+    parallelStages:
+      check-efficiency:
+        image: extensions/docker:stable
+        action: dive
+        container: docker
+        repositories:
+        - extensions
+
+      vulnerability-scan:
+        image: extensions/docker:stable
+        action: trivy
+        container: docker
+        repositories:
+        - extensions
+
   tests:
     parallelStages:
       test-build:
