@@ -89,6 +89,7 @@ stages:
   test-dive:
     image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
     action: dive
+    container: docker
     repositories:
     - extensions
 
