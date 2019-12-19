@@ -26,12 +26,19 @@ stages:
     action: build
     container: docker
     inline: |
+      FROM alpine:3.10
+
+      RUN wget -qO- https://github.com/wagoodman/dive/releases/download/v0.9.1/dive_0.9.1_linux_amd64.tar.gz | \
+          tar xvz - -C / \
+          && /dive version
+
       FROM scratch
 
       LABEL maintainer="estafette.io"
 
       COPY ${ESTAFETTE_GIT_NAME} /
       COPY ca-certificates.crt /etc/ssl/certs/
+      COPY --from=0 /dive /dive
 
       ENV PATH="/dod:$PATH" \
           ESTAFETTE_LOG_FORMAT="console"
@@ -54,9 +61,6 @@ stages:
 
       COPY ${ESTAFETTE_GIT_NAME} /
       COPY ca-certificates.crt /etc/ssl/certs/
-
-      RUN wget -qO- https://github.com/wagoodman/dive/releases/download/v0.9.1/dive_0.9.1_linux_amd64.tar.gz | tar xvz - -C / \
-          && /dive version
 
       ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
     repositories:
