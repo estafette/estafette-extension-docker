@@ -28,11 +28,15 @@ stages:
     inline: |
       FROM alpine:3.10
 
-      RUN wget -O- https://github.com/wagoodman/dive/releases/download/v0.9.1/dive_0.9.1_linux_amd64.tar.gz | \
+      ARG DIVE_VERSION=0.9.1
+
+      RUN wget -O- https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_{DIVE_VERSION}_linux_amd64.tar.gz | \
           tar -xzf - -C / \
           && /dive version
 
-      RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v0.4.1/trivy_0.4.1_Linux-64bit.tar.gz | \
+      ARG TRIVY_VERSION=0.4.2
+
+      RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | \
           tar -xzf - -C / \
           && /trivy --version \
           && /trivy --light --no-progress --download-db-only --cache-dir /trivy-cache
@@ -54,6 +58,9 @@ stages:
     repositories:
     - extensions
     path: ./publish
+    dontExpand:
+    - DIVE_VERSION
+    - TRIVY_VERSION
     copy:
     - /etc/ssl/certs/ca-certificates.crt
 
