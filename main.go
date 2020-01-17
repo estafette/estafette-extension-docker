@@ -307,7 +307,7 @@ func main() {
 			severityArgument = "CRITICAL"
 		}
 
-		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
+		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
 		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--severity", severityArgument, "--light", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", containerPath})
 		if err != nil {
 			if strings.EqualFold(err.Error(), "exit status 1") {
