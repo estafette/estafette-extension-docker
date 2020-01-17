@@ -100,7 +100,7 @@ stages:
         no-cache: true
         container: hugo-test
         inline: |
-          FROM estafette/hugo:master
+          FROM estafette/hugo:0.62.2
 
           COPY ca-certificates.crt /etc/ssl/certs/
           COPY publish /publish
