@@ -51,6 +51,8 @@ var (
 	gitBranch = kingpin.Flag("git-branch", "Git branch to tag image with for improved caching.").Envar("ESTAFETTE_GIT_BRANCH").String()
 	appLabel  = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
 
+	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("CRITICAL").Envar("ESTAFETTE_EXTENSION_SEVERITY").String()
+
 	credentialsJSON = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
 )
 
@@ -289,6 +291,32 @@ func main() {
 		args = append(args, "--file", targetDockerfilePath)
 		args = append(args, *path)
 		foundation.RunCommandWithArgs(ctx, "docker", args)
+
+		// run trivy for CRITICAL
+		severityArgument := "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+		switch strings.ToUpper(*minimumSeverityToFail) {
+		case "UNKNOWN":
+			severityArgument = "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+		case "LOW":
+			severityArgument = "LOW,MEDIUM,HIGH,CRITICAL"
+		case "MEDIUM":
+			severityArgument = "MEDIUM,HIGH,CRITICAL"
+		case "HIGH":
+			severityArgument = "HIGH,CRITICAL"
+		case "CRITICAL":
+			severityArgument = "CRITICAL"
+		}
+
+		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--severity", severityArgument, "--light", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", containerPath})
+		if err != nil {
+			if strings.EqualFold(err.Error(), "exit status 1") {
+				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
+				log.Warn().Msg("Ignoring Unknown OS error")
+			} else {
+				foundation.HandleError(err)
+			}
+		}
 
 	case "push":
 
