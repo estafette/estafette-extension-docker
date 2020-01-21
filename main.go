@@ -314,7 +314,7 @@ func main() {
 				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
 				log.Warn().Msg("Ignoring Unknown OS error")
 			} else {
-				foundation.HandleError(err)
+				log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabililties in your image.", severityArgument)
 			}
 		}
 
@@ -497,7 +497,7 @@ func main() {
 				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
 				log.Warn().Msg("Ignoring Unknown OS error")
 			} else {
-				foundation.HandleError(err)
+				log.Fatal().Msgf("The container image has vulnerabilities! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabililties in your image.")
 			}
 		}
 
