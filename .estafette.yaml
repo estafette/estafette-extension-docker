@@ -28,7 +28,7 @@ stages:
     inline: |
       FROM alpine:3.11
 
-      ARG DIVE_VERSION=0.9.1
+      ARG DIVE_VERSION=0.9.2
 
       RUN wget -O- https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_${DIVE_VERSION}_linux_amd64.tar.gz | \
           tar -xzf - -C / \
