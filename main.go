@@ -522,7 +522,7 @@ func main() {
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", tmpfile.Name()})
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", "--input", tmpfile.Name()})
 		if err != nil {
 			log.Fatal().Msgf("The container image has vulnerabilities! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabililties in your image.")
 		}
