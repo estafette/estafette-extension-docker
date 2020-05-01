@@ -53,7 +53,8 @@ var (
 
 	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("CRITICAL").Envar("ESTAFETTE_EXTENSION_SEVERITY").String()
 
-	credentialsJSON = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
+	credentialsJSON    = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
+	githubAPITokenJSON = kingpin.Flag("githubApiToken", "Github api token credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_GITHUB_API_TOKEN").String()
 )
 
 func main() {
@@ -91,6 +92,21 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed unmarshalling injected credentials")
 		}
+	}
+
+	if *githubAPITokenJSON != "" {
+		var githubAPIToken []APITokenCredentials
+		err := json.Unmarshal([]byte(*githubAPITokenJSON), &credentials)
+
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed unmarshalling injected github api token credentials")
+		}
+		if len(githubAPIToken) == 0 {
+			log.Fatal().Msg("No github api token has been injected")
+		}
+
+		// set as env, so it gets used by Trivy to avoid github api rate limits when downloading db
+		os.Setenv("GITHUB_TOKEN", githubAPIToken[0].AdditionalProperties.Token)
 	}
 
 	// validate inputs
