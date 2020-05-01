@@ -327,6 +327,9 @@ func main() {
 
 		log.Info().Msg("Saving docker image to file for scanning...")
 		tmpfile, err := ioutil.TempFile("", "*.tar")
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed creating temporary file")
+		}
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
@@ -518,6 +521,9 @@ func main() {
 
 		log.Info().Msg("Saving docker image to file for scanning...")
 		tmpfile, err := ioutil.TempFile("", "*.tar")
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed creating temporary file")
+		}
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
