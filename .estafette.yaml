@@ -50,6 +50,7 @@ stages:
       COPY --from=0 /dive /dive
       COPY --from=0 /trivy /trivy
       COPY --from=0 /trivy-cache /trivy-cache
+      COPY --from=0 /tmp /tmp
 
       ENV PATH="/dod:$PATH" \
           ESTAFETTE_LOG_FORMAT="console"
