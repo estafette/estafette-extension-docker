@@ -96,7 +96,7 @@ func main() {
 
 	if *githubAPITokenJSON != "" {
 		var githubAPIToken []APITokenCredentials
-		err := json.Unmarshal([]byte(*githubAPITokenJSON), &credentials)
+		err := json.Unmarshal([]byte(*githubAPITokenJSON), &githubAPIToken)
 
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed unmarshalling injected github api token credentials")
