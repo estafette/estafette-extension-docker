@@ -101,12 +101,10 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed unmarshalling injected github api token credentials")
 		}
-		if len(githubAPIToken) == 0 {
-			log.Fatal().Msg("No github api token has been injected")
+		if len(githubAPIToken) > 0 {
+			// set as env, so it gets used by Trivy to avoid github api rate limits when downloading db
+			os.Setenv("GITHUB_TOKEN", githubAPIToken[0].AdditionalProperties.Token)
 		}
-
-		// set as env, so it gets used by Trivy to avoid github api rate limits when downloading db
-		os.Setenv("GITHUB_TOKEN", githubAPIToken[0].AdditionalProperties.Token)
 	}
 
 	// validate inputs
