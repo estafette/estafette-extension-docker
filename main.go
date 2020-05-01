@@ -307,8 +307,12 @@ func main() {
 			severityArgument = "CRITICAL"
 		}
 
+		// update trivy db, ignore errors
+		log.Info().Msg("Updating trivy vulnerabilities database...")
+		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--light", "--download-db-only", "--cache-dir", "/trivy-cache", containerPath})
+
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--severity", severityArgument, "--light", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", containerPath})
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", containerPath})
 		if err != nil {
 			if strings.EqualFold(err.Error(), "exit status 1") {
 				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
