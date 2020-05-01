@@ -335,12 +335,7 @@ func main() {
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
 		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", "--input", tmpfile.Name()})
 		if err != nil {
-			if strings.EqualFold(err.Error(), "exit status 1") {
-				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
-				log.Warn().Msg("Ignoring Unknown OS error")
-			} else {
-				log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabililties in your image.", severityArgument)
-			}
+			log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabililties in your image.", severityArgument)
 		}
 
 	case "push":
@@ -529,12 +524,7 @@ func main() {
 		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
 		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", tmpfile.Name()})
 		if err != nil {
-			if strings.EqualFold(err.Error(), "exit status 1") {
-				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
-				log.Warn().Msg("Ignoring Unknown OS error")
-			} else {
-				log.Fatal().Msgf("The container image has vulnerabilities! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabililties in your image.")
-			}
+			log.Fatal().Msgf("The container image has vulnerabilities! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabililties in your image.")
 		}
 
 	default:
