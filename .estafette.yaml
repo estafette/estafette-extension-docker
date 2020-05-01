@@ -52,7 +52,8 @@ stages:
       COPY --from=0 /trivy-cache /trivy-cache
 
       ENV PATH="/dod:$PATH" \
-          ESTAFETTE_LOG_FORMAT="console"
+          ESTAFETTE_LOG_FORMAT="console" \
+          DOCKER_API_VERSION="1.40"
 
       ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
     repositories:
