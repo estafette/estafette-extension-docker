@@ -326,7 +326,7 @@ func main() {
 		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--light", "--download-db-only", "--cache-dir", "/trivy-cache", containerPath})
 
 		log.Info().Msg("Saving docker image to file for scanning...")
-		tmpfile, err := ioutil.TempFile("", "*.tar")
+		tmpfile, err := ioutil.TempFile("", "docker-*.tar")
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
@@ -515,7 +515,7 @@ func main() {
 		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--light", "--download-db-only", "--cache-dir", "/trivy-cache", containerPath})
 
 		log.Info().Msg("Saving docker image to file for scanning...")
-		tmpfile, err := ioutil.TempFile("", "*.tar")
+		tmpfile, err := ioutil.TempFile("", "docker-*.tar")
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
