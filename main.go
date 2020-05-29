@@ -323,7 +323,7 @@ func main() {
 
 		// update trivy db, ignore errors
 		log.Info().Msg("Updating trivy vulnerabilities database...")
-		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"image", "--light", "--download-db-only", "--cache-dir", "/trivy-cache", containerPath})
+		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache","image", "--light", "--download-db-only", containerPath})
 
 		log.Info().Msg("Saving docker image to file for scanning...")
 		tmpfile, err := ioutil.TempFile("", "*.tar")
@@ -333,7 +333,7 @@ func main() {
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", "--input", tmpfile.Name()})
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
 		if err != nil {
 			if strings.EqualFold(err.Error(), "exit status 1") {
 				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
@@ -518,7 +518,7 @@ func main() {
 
 		// update trivy db, ignore errors
 		log.Info().Msg("Updating trivy vulnerabilities database...")
-		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"image", "--light", "--download-db-only", "--cache-dir", "/trivy-cache", containerPath})
+		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--download-db-only", containerPath})
 
 		log.Info().Msg("Saving docker image to file for scanning...")
 		tmpfile, err := ioutil.TempFile("", "*.tar")
@@ -528,7 +528,7 @@ func main() {
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"image", "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--cache-dir", "/trivy-cache", "--input", tmpfile.Name()})
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
 		if err != nil {
 			if strings.EqualFold(err.Error(), "exit status 1") {
 				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8

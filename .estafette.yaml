@@ -39,8 +39,8 @@ stages:
       RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | \
           tar -xzf - -C / \
           && /trivy --version \
-          && /trivy image --light --no-progress --download-db-only --cache-dir /trivy-cache \
-          && /trivy image --severity CRITICAL --light --skip-update --no-progress --ignore-unfixed --cache-dir /trivy-cache alpine:3.11
+          && /trivy --cache-dir /trivy-cache image --light --no-progress --download-db-only \
+          && /trivy --cache-dir /trivy-cache image --severity CRITICAL --light --skip-update --no-progress --ignore-unfixed alpine:3.11
 
       FROM scratch
 
