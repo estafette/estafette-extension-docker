@@ -42,6 +42,7 @@ var (
 	target                     = kingpin.Flag("target", "Specify which stage to target for multi-stage build.").Envar("ESTAFETTE_EXTENSION_TARGET").String()
 	args                       = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
 	pushVersionTag             = kingpin.Flag("push-version-tag", "By default the version tag is pushed, so it can be promoted with a release, but if you don't want it you can disable it via this flag.").Default("true").Envar("ESTAFETTE_EXTENSION_PUSH_VERSION_TAG").Bool()
+	versionTagPrefix           = kingpin.Flag("version-tag-prefix", "A prefix to add to the version tag so promoting different containers originating from the same pipeline is possible.").Envar("ESTAFETTE_EXTENSION_VERSION_TAG_PREFIX").String()
 	versionTagSuffix           = kingpin.Flag("version-tag-suffix", "A suffix to add to the version tag so promoting different containers originating from the same pipeline is possible.").Envar("ESTAFETTE_EXTENSION_VERSION_TAG_SUFFIX").String()
 	noCache                    = kingpin.Flag("no-cache", "Indicates cache shouldn't be used when building the image.").Default("false").Envar("ESTAFETTE_EXTENSION_NO_CACHE").Bool()
 	expandEnvironmentVariables = kingpin.Flag("expand-envvars", "By default environment variables get replaced in the Dockerfile, use this flag to disable that behaviour").Default("true").Envar("ESTAFETTE_EXTENSION_EXPAND_VARIABLES").Bool()
@@ -129,6 +130,9 @@ func main() {
 	}
 	estafetteBuildVersion := os.Getenv("ESTAFETTE_BUILD_VERSION")
 	estafetteBuildVersionAsTag := tidyTag(estafetteBuildVersion)
+	if *versionTagPrefix != "" {
+		estafetteBuildVersionAsTag = tidyTag(*versionTagPrefix + "-" + estafetteBuildVersionAsTag)
+	}
 	if *versionTagSuffix != "" {
 		estafetteBuildVersionAsTag = tidyTag(estafetteBuildVersionAsTag + "-" + *versionTagSuffix)
 	}
@@ -323,7 +327,7 @@ func main() {
 
 		// update trivy db, ignore errors
 		log.Info().Msg("Updating trivy vulnerabilities database...")
-		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache","image", "--light", "--download-db-only", containerPath})
+		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--download-db-only", containerPath})
 
 		log.Info().Msg("Saving docker image to file for scanning...")
 		tmpfile, err := ioutil.TempFile("", "*.tar")
