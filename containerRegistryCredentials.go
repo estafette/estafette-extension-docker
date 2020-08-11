@@ -9,7 +9,8 @@ type ContainerRegistryCredentials struct {
 
 // ContainerRegistryCredentialsAdditionalProperties contains the non standard fields for this type of credentials
 type ContainerRegistryCredentialsAdditionalProperties struct {
-	Repository string `json:"repository,omitempty"`
-	Username   string `json:"username,omitempty"`
-	Password   string `json:"password,omitempty"`
+	Repository             string `json:"repository,omitempty"`
+	Username               string `json:"username,omitempty"`
+	Password               string `json:"password,omitempty"`
+	AllowedPipelinesToPush string `json:"allowedPipelinesToPush,omitempty"`
 }
