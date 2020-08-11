@@ -48,6 +48,8 @@ var (
 	expandEnvironmentVariables = kingpin.Flag("expand-envvars", "By default environment variables get replaced in the Dockerfile, use this flag to disable that behaviour").Default("true").Envar("ESTAFETTE_EXTENSION_EXPAND_VARIABLES").Bool()
 	dontExpand                 = kingpin.Flag("dont-expand", "Comma separate list of environment variable names that should not be expanded").Default("PATH").Envar("ESTAFETTE_EXTENSION_DONT_EXPAND").String()
 
+	gitSource = kingpin.Flag("git-source", "Repository source.").Envar("ESTAFETTE_GIT_SOURCE").String()
+	gitOwner  = kingpin.Flag("git-owner", "Repository owner.").Envar("ESTAFETTE_GIT_OWNER").String()
 	gitName   = kingpin.Flag("git-name", "Repository name, used as application name if not passed explicitly and app label not being set.").Envar("ESTAFETTE_GIT_NAME").String()
 	gitBranch = kingpin.Flag("git-branch", "Git branch to tag image with for improved caching.").Envar("ESTAFETTE_GIT_BRANCH").String()
 	appLabel  = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
@@ -248,7 +250,7 @@ func main() {
 
 		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
 		for _, i := range fromImagePaths {
-			loginIfRequired(credentials, i)
+			loginIfRequired(credentials, false, i)
 			log.Info().Msgf("Pulling container image %v", i)
 			pullArgs := []string{
 				"pull",
@@ -259,7 +261,7 @@ func main() {
 
 		// login to registry for destination container image
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
-		loginIfRequired(credentials, containerPath)
+		loginIfRequired(credentials, false, containerPath)
 		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 
 		if !*noCache {
@@ -378,7 +380,7 @@ func main() {
 				foundation.HandleError(err)
 			}
 
-			loginIfRequired(credentials, targetContainerPath)
+			loginIfRequired(credentials, true, targetContainerPath)
 
 			if *pushVersionTag {
 				// push container with default tag
@@ -423,7 +425,7 @@ func main() {
 				}
 				foundation.RunCommandWithArgs(ctx, "docker", tagArgs)
 
-				loginIfRequired(credentials, targetContainerPath)
+				loginIfRequired(credentials, true, targetContainerPath)
 
 				log.Info().Msgf("Pushing container image %v", targetContainerPath)
 				pushArgs := []string{
@@ -447,7 +449,7 @@ func main() {
 
 		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
-		loginIfRequired(credentials, sourceContainerPath)
+		loginIfRequired(credentials, false, sourceContainerPath)
 
 		// pull source container first
 		log.Info().Msgf("Pulling container image %v", sourceContainerPath)
@@ -472,7 +474,7 @@ func main() {
 				}
 				foundation.RunCommandWithArgs(ctx, "docker", tagArgs)
 
-				loginIfRequired(credentials, targetContainerPath)
+				loginIfRequired(credentials, true, targetContainerPath)
 
 				// push container with default tag
 				log.Info().Msgf("Pushing container image %v", targetContainerPath)
@@ -497,7 +499,7 @@ func main() {
 				}
 				foundation.RunCommandWithArgs(ctx, "docker", tagArgs)
 
-				loginIfRequired(credentials, targetContainerPath)
+				loginIfRequired(credentials, true, targetContainerPath)
 
 				log.Info().Msgf("Pushing container image %v", targetContainerPath)
 				pushArgs := []string{
@@ -572,6 +574,7 @@ func getCredentialsForContainers(credentials []ContainerRegistryCredentials, con
 			// find the credentials matching the container image
 			for _, credential := range credentials {
 				if containerRepo == credential.AdditionalProperties.Repository {
+
 					// this one matches, add it to the map
 					filteredCredentialsMap[credential.AdditionalProperties.Repository] = &credential
 					break
@@ -581,6 +584,19 @@ func getCredentialsForContainers(credentials []ContainerRegistryCredentials, con
 	}
 
 	return filteredCredentialsMap
+}
+
+// isAllowedPipelineForPush returns true if allowedPipelinesToPush is empty or matches the pipelines full path
+func isAllowedPipelineForPush(credential ContainerRegistryCredentials, fullRepositoryPath string) bool {
+
+	if credential.AdditionalProperties.AllowedPipelinesToPush == "" {
+		return true
+	}
+
+	pattern := fmt.Sprintf("^%v$", strings.TrimSpace(credential.AdditionalProperties.AllowedPipelinesToPush))
+	isMatch, _ := regexp.Match(pattern, []byte(fullRepositoryPath))
+
+	return isMatch
 }
 
 var (
@@ -611,7 +627,7 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]string, error)
 	return containerImages, nil
 }
 
-func loginIfRequired(credentials []ContainerRegistryCredentials, containerImages ...string) {
+func loginIfRequired(credentials []ContainerRegistryCredentials, push bool, containerImages ...string) {
 
 	log.Info().Msgf("Filtering credentials for images %v", containerImages)
 
@@ -623,6 +639,13 @@ func loginIfRequired(credentials []ContainerRegistryCredentials, containerImages
 	if filteredCredentialsMap != nil {
 		for _, c := range filteredCredentialsMap {
 			if c != nil {
+
+				fullRepositoryPath := fmt.Sprintf("%v/%v/%v", *gitSource, *gitOwner, *gitName)
+				if push && !isAllowedPipelineForPush(*c, fullRepositoryPath) {
+					log.Info().Msgf("Pushing to repository '%v' is not allowed, skipping login", c.AdditionalProperties.Repository)
+					continue
+				}
+
 				log.Info().Msgf("Logging in to repository '%v'", c.AdditionalProperties.Repository)
 				loginArgs := []string{
 					"login",
