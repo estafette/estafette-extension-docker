@@ -89,7 +89,7 @@ stages:
         action: build
         container: docker-test
         inline: |
-          FROM docker:18.09.0
+          FROM docker:19.03.13
 
           LABEL maintainer="estafette.io"
 
