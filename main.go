@@ -346,7 +346,7 @@ func main() {
 				// await https://github.com/aquasecurity/trivy/pull/476 to be released
 				log.Warn().Msg("Ignoring Unknown OS error")
 			} else {
-				log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabililties in your image.", severityArgument)
+				log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabilities in your image.", severityArgument)
 			}
 		}
 
@@ -541,7 +541,7 @@ func main() {
 				// await https://github.com/aquasecurity/trivy/pull/476 to be released
 				log.Warn().Msg("Ignoring Unknown OS error")
 			} else {
-				log.Fatal().Msgf("The container image has vulnerabilities! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabililties in your image.")
+				log.Fatal().Msgf("The container image has vulnerabilities! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabilities in your image.")
 			}
 		}
 
