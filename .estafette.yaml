@@ -45,7 +45,7 @@ stages:
       ARG IMG_VERSION=v0.5.11
 
       RUN wget -O /img https://github.com/genuinetools/img/releases/download/${IMG_VERSION}/img-linux-amd64 \
-          && chmod a+x "/img"
+          && chmod a+x "/img" \
           && /img version
 
       FROM scratch
