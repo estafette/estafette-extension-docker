@@ -42,6 +42,12 @@ stages:
           && /trivy --cache-dir /trivy-cache image --light --no-progress --download-db-only \
           && /trivy --cache-dir /trivy-cache image --severity CRITICAL --light --skip-update --no-progress --ignore-unfixed alpine:3.11
 
+      ARG IMG_VERSION=v0.5.11
+
+      RUN wget -O /img https://github.com/genuinetools/img/releases/download/${IMG_VERSION}/img-linux-amd64 \
+          && chmod a+x "/img"
+          && /img version
+
       FROM scratch
 
       LABEL maintainer="estafette.io"
@@ -51,10 +57,10 @@ stages:
       COPY --from=0 /dive /dive
       COPY --from=0 /trivy /trivy
       COPY --from=0 /trivy-cache /trivy-cache
+      COPY --from=0 /img /img
       COPY --from=0 /tmp /tmp
 
-      ENV PATH="/dod:$PATH" \
-          ESTAFETTE_LOG_FORMAT="console"
+      ENV ESTAFETTE_LOG_FORMAT="console"
 
       ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
     repositories:

@@ -256,7 +256,7 @@ func main() {
 				"pull",
 				i,
 			}
-			foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
+			foundation.RunCommandWithArgs(ctx, "/img", pullArgs)
 		}
 
 		// login to registry for destination container image
@@ -271,7 +271,7 @@ func main() {
 				cacheContainerPath,
 			}
 			// ignore if it fails
-			foundation.RunCommandWithArgsExtended(ctx, "docker", pullArgs)
+			foundation.RunCommandWithArgsExtended(ctx, "/img", pullArgs)
 		}
 
 		// build docker image
@@ -310,7 +310,7 @@ func main() {
 		}
 		args = append(args, "--file", targetDockerfilePath)
 		args = append(args, *path)
-		foundation.RunCommandWithArgs(ctx, "docker", args)
+		foundation.RunCommandWithArgs(ctx, "/img", args)
 
 		// run trivy for CRITICAL
 		severityArgument := "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
@@ -336,7 +336,7 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
-		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
+		foundation.RunCommandWithArgs(ctx, "/img", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
 		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
@@ -376,7 +376,7 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				err := exec.Command("docker", tagArgs...).Run()
+				err := exec.Command("/img", tagArgs...).Run()
 				foundation.HandleError(err)
 			}
 
@@ -389,7 +389,7 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "/img", pushArgs)
 			} else {
 				log.Info().Msg("Skipping pushing version tag, because pushVersionTag is set to false; this make promoting a version to a tag at a later stage impossible!")
 			}
@@ -404,7 +404,7 @@ func main() {
 					"push",
 					cacheContainerPath,
 				}
-				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "/img", pushArgs)
 			}
 
 			// push additional tags
@@ -423,7 +423,7 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs(ctx, "docker", tagArgs)
+				foundation.RunCommandWithArgs(ctx, "/img", tagArgs)
 
 				loginIfRequired(credentials, true, targetContainerPath)
 
@@ -432,7 +432,7 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "/img", pushArgs)
 			}
 		}
 
@@ -457,7 +457,7 @@ func main() {
 			"pull",
 			sourceContainerPath,
 		}
-		foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
+		foundation.RunCommandWithArgs(ctx, "/img", pullArgs)
 
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
@@ -472,7 +472,7 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs(ctx, "docker", tagArgs)
+				foundation.RunCommandWithArgs(ctx, "/img", tagArgs)
 
 				loginIfRequired(credentials, true, targetContainerPath)
 
@@ -482,7 +482,7 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "/img", pushArgs)
 			}
 
 			// push additional tags
@@ -497,7 +497,7 @@ func main() {
 					sourceContainerPath,
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs(ctx, "docker", tagArgs)
+				foundation.RunCommandWithArgs(ctx, "/img", tagArgs)
 
 				loginIfRequired(credentials, true, targetContainerPath)
 
@@ -506,7 +506,7 @@ func main() {
 					"push",
 					targetContainerPath,
 				}
-				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
+				foundation.RunCommandWithArgs(ctx, "/img", pushArgs)
 			}
 		}
 
@@ -531,7 +531,7 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
-		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
+		foundation.RunCommandWithArgs(ctx, "/img", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
 		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
@@ -661,7 +661,7 @@ func loginIfRequired(credentials []ContainerRegistryCredentials, push bool, cont
 					loginArgs = append(loginArgs, server)
 				}
 
-				err := exec.Command("docker", loginArgs...).Run()
+				err := exec.Command("/img", loginArgs...).Run()
 				foundation.HandleError(err)
 			}
 		}
