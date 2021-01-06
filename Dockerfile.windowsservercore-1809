@@ -1,9 +1,0 @@
-FROM mcr.microsoft.com/windows/servercore:1809
-
-COPY estafette-extension-docker.exe c:/estafette-extension-docker.exe
-
-USER ContainerAdministrator
-
-ENV PATH="C:\dod;$PATH"
-
-ENTRYPOINT ["C:/estafette-extension-docker.exe"]
