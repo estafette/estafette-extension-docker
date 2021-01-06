@@ -182,20 +182,20 @@ releases:
         container: docker-test
         versionTagSuffix: -suffix
         inline: |
-          FROM mcr.microsoft.com/windows/servercore:1809
+          FROM mcr.microsoft.com/windows/servercore:ltsc2019
 
           RUN netsh interface ipv4 show interfaces
         repositories:
         - extensions
 
       push-to-docker-hub:
-        image: extensions/docker:windowsservercore-1809
+        image: extensions/docker:windowsservercore-ltsc2019
         action: push
         container: docker
         repositories:
         - extensions
         tags:
-        - windowsservercore-1809
+        - windowsservercore-ltsc2019
         pushVersionTag: false
 
   dev:
