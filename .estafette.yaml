@@ -54,8 +54,7 @@ stages:
       COPY --from=0 /tmp /tmp
 
       ENV PATH="/dod:$PATH" \
-          ESTAFETTE_LOG_FORMAT="console" \
-          ESTAFETTE_EXTENSION_SAVE_CONTAINER_FOR_TRIVY="true"
+          ESTAFETTE_LOG_FORMAT="console"
 
       ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
     repositories:

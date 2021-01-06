@@ -55,7 +55,6 @@ var (
 	appLabel  = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
 
 	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("CRITICAL").Envar("ESTAFETTE_EXTENSION_SEVERITY").String()
-	saveContainerForTrivy = kingpin.Flag("save-container-for-trivy", "When enabled the docker image is written to disk before running trivy against is.").Default("false").Envar("ESTAFETTE_EXTENSION_SAVE_CONTAINER_FOR_TRIVY").Bool()
 
 	credentialsJSON    = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
 	githubAPITokenJSON = kingpin.Flag("githubApiToken", "Github api token credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_GITHUB_API_TOKEN").String()
@@ -313,6 +312,10 @@ func main() {
 		args = append(args, *path)
 		foundation.RunCommandWithArgs(ctx, "docker", args)
 
+		if runtime.GOOS == "windows" {
+			return
+		}
+
 		// run trivy for CRITICAL
 		severityArgument := "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
 		switch strings.ToUpper(*minimumSeverityToFail) {
@@ -332,20 +335,15 @@ func main() {
 		log.Info().Msg("Updating trivy vulnerabilities database...")
 		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--download-db-only", containerPath})
 
-		if *saveContainerForTrivy {
-			log.Info().Msg("Saving docker image to file for scanning...")
-			tmpfile, err := ioutil.TempFile("", "*.tar")
-			if err != nil {
-				log.Fatal().Err(err).Msg("Failed creating temporary file")
-			}
-			foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
-
-			log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
-			err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
-		} else {
-			log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
-			err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", containerPath})
+		log.Info().Msg("Saving docker image to file for scanning...")
+		tmpfile, err := ioutil.TempFile("", "*.tar")
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
+		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
+
+		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
 
 		if err != nil {
 			if strings.EqualFold(err.Error(), "exit status 1") {
@@ -353,7 +351,7 @@ func main() {
 				// await https://github.com/aquasecurity/trivy/pull/476 to be released
 				log.Warn().Msg("Ignoring Unknown OS error")
 			} else {
-				log.Fatal().Err(err).Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabilities in your image.", severityArgument)
+				log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabilities in your image.", severityArgument)
 			}
 		}
 
@@ -519,6 +517,10 @@ func main() {
 
 	case "dive":
 
+		if runtime.GOOS == "windows" {
+			log.Fatal().Msgf("Dive is currently not supported for windows!")
+		}
+
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		log.Info().Msgf("Inspecting container image %v layers...", containerPath)
@@ -527,27 +529,25 @@ func main() {
 
 	case "trivy":
 
+		if runtime.GOOS == "windows" {
+			log.Fatal().Msgf("Trivy is currently not supported for windows!")
+		}
+
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		// update trivy db, ignore errors
 		log.Info().Msg("Updating trivy vulnerabilities database...")
 		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--download-db-only", containerPath})
 
-		var err error
-		if *saveContainerForTrivy {
-			log.Info().Msg("Saving docker image to file for scanning...")
-			tmpfile, err := ioutil.TempFile("", "*.tar")
-			if err != nil {
-				log.Fatal().Err(err).Msg("Failed creating temporary file")
-			}
-			foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
-
-			log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
-			err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
-		} else {
-			log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
-			err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", containerPath})
+		log.Info().Msg("Saving docker image to file for scanning...")
+		tmpfile, err := ioutil.TempFile("", "*.tar")
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
+		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
+
+		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
 
 		if err != nil {
 			if strings.EqualFold(err.Error(), "exit status 1") {
@@ -555,7 +555,7 @@ func main() {
 				// await https://github.com/aquasecurity/trivy/pull/476 to be released
 				log.Warn().Msg("Ignoring Unknown OS error")
 			} else {
-				log.Fatal().Err(err).Msgf("The container image has vulnerabilities! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabilities in your image.")
+				log.Fatal().Msgf("The container image has vulnerabilities! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabilities in your image.")
 			}
 		}
 
