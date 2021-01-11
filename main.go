@@ -56,9 +56,7 @@ var (
 
 	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("CRITICAL").Envar("ESTAFETTE_EXTENSION_SEVERITY").String()
 
-	credentialsJSON    = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
 	credentialsPath    = kingpin.Flag("credentials-path", "Path to file with container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("/credentials/container_registry.json").String()
-	githubAPITokenJSON = kingpin.Flag("githubApiToken", "Github api token credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_GITHUB_API_TOKEN").String()
 	githubAPITokenPath = kingpin.Flag("githubApiToken-path", "Path to file with Github api token credentials configured at the CI server, passed in to this trusted extension.").Envar("/credentials/github_api_token.json").String()
 )
 
@@ -106,11 +104,6 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed unmarshalling injected credentials")
 		}
-	} else if *credentialsJSON != "" {
-		err := json.Unmarshal([]byte(*credentialsJSON), &credentials)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed unmarshalling injected credentials")
-		}
 	}
 
 	var githubAPIToken []APITokenCredentials
@@ -126,12 +119,6 @@ func main() {
 		err = json.Unmarshal(credentialsFileContent, &credentials)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed unmarshalling injected credentials")
-		}
-	} else if *githubAPITokenJSON != "" {
-		err := json.Unmarshal([]byte(*githubAPITokenJSON), &githubAPIToken)
-
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed unmarshalling injected github api token credentials")
 		}
 		if len(githubAPIToken) > 0 {
 			// set as env, so it gets used by Trivy to avoid github api rate limits when downloading db
