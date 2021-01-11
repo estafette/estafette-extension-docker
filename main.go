@@ -106,7 +106,6 @@ func main() {
 		}
 	}
 
-	var githubAPIToken []APITokenCredentials
 	if runtime.GOOS == "windows" {
 		*githubAPITokenPath = "C:" + *githubAPITokenPath
 	}
@@ -116,7 +115,8 @@ func main() {
 		if err != nil {
 			log.Fatal().Msgf("Failed reading credential file at path %v.", *githubAPITokenPath)
 		}
-		err = json.Unmarshal(credentialsFileContent, &credentials)
+		var githubAPIToken []APITokenCredentials
+		err = json.Unmarshal(credentialsFileContent, &githubAPIToken)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed unmarshalling injected credentials")
 		}
