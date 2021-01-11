@@ -56,8 +56,8 @@ var (
 
 	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("CRITICAL").Envar("ESTAFETTE_EXTENSION_SEVERITY").String()
 
-	credentialsPath    = kingpin.Flag("credentials-path", "Path to file with container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("/credentials/container_registry.json").String()
-	githubAPITokenPath = kingpin.Flag("githubApiToken-path", "Path to file with Github api token credentials configured at the CI server, passed in to this trusted extension.").Envar("/credentials/github_api_token.json").String()
+	credentialsPath    = kingpin.Flag("credentials-path", "Path to file with container registry credentials configured at the CI server, passed in to this trusted extension.").Default("/credentials/container_registry.json").String()
+	githubAPITokenPath = kingpin.Flag("githubApiToken-path", "Path to file with Github api token credentials configured at the CI server, passed in to this trusted extension.").Default("/credentials/github_api_token.json").String()
 )
 
 func main() {
