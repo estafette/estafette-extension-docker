@@ -57,7 +57,9 @@ var (
 	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("CRITICAL").Envar("ESTAFETTE_EXTENSION_SEVERITY").String()
 
 	credentialsJSON    = kingpin.Flag("credentials", "Container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_CONTAINER_REGISTRY").String()
+	credentialsPath    = kingpin.Flag("credentials-path", "Path to file with container registry credentials configured at the CI server, passed in to this trusted extension.").Envar("/credentials/container_registry.json").String()
 	githubAPITokenJSON = kingpin.Flag("githubApiToken", "Github api token credentials configured at the CI server, passed in to this trusted extension.").Envar("ESTAFETTE_CREDENTIALS_GITHUB_API_TOKEN").String()
+	githubAPITokenPath = kingpin.Flag("githubApiToken-path", "Path to file with Github api token credentials configured at the CI server, passed in to this trusted extension.").Envar("/credentials/github_api_token.json").String()
 )
 
 func main() {
@@ -90,15 +92,42 @@ func main() {
 
 	// get api token from injected credentials
 	var credentials []ContainerRegistryCredentials
-	if *credentialsJSON != "" {
+	// use mounted credential file if present instead of relying on an envvar
+	if runtime.GOOS == "windows" {
+		*credentialsPath = "C:" + *credentialsPath
+	}
+	if foundation.FileExists(*credentialsPath) {
+		log.Info().Msgf("Reading credentials from file at path %v...", *credentialsPath)
+		credentialsFileContent, err := ioutil.ReadFile(*credentialsPath)
+		if err != nil {
+			log.Fatal().Msgf("Failed reading credential file at path %v.", *credentialsPath)
+		}
+		err = json.Unmarshal(credentialsFileContent, &credentials)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed unmarshalling injected credentials")
+		}
+	} else if *credentialsJSON != "" {
 		err := json.Unmarshal([]byte(*credentialsJSON), &credentials)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed unmarshalling injected credentials")
 		}
 	}
 
-	if *githubAPITokenJSON != "" {
-		var githubAPIToken []APITokenCredentials
+	var githubAPIToken []APITokenCredentials
+	if runtime.GOOS == "windows" {
+		*githubAPITokenPath = "C:" + *githubAPITokenPath
+	}
+	if foundation.FileExists(*githubAPITokenPath) {
+		log.Info().Msgf("Reading credentials from file at path %v...", *githubAPITokenPath)
+		credentialsFileContent, err := ioutil.ReadFile(*githubAPITokenPath)
+		if err != nil {
+			log.Fatal().Msgf("Failed reading credential file at path %v.", *githubAPITokenPath)
+		}
+		err = json.Unmarshal(credentialsFileContent, &credentials)
+		if err != nil {
+			log.Fatal().Err(err).Msg("Failed unmarshalling injected credentials")
+		}
+	} else if *githubAPITokenJSON != "" {
 		err := json.Unmarshal([]byte(*githubAPITokenJSON), &githubAPIToken)
 
 		if err != nil {
