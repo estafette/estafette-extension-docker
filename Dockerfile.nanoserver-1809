@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/windows/nanoserver:1809
 
-COPY estafette-extension-docker.exe C:/estafette-extension-docker.exe
+COPY ./estafette-extension-docker.exe C:/estafette-extension-docker.exe
 
 ENV ESTAFETTE_LOG_FORMAT="console"
 

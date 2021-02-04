@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/windows/servercore:ltsc2019
 
-COPY estafette-extension-docker.exe C:/estafette-extension-docker.exe
+COPY ./estafette-extension-docker.exe C:/estafette-extension-docker.exe
 
 ENV ESTAFETTE_LOG_FORMAT="console" \
     PATH="C:\dod;$PATH"
