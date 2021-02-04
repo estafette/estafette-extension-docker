@@ -1,0 +1,11 @@
+FROM mcr.microsoft.com/windows/nanoserver:1809
+
+COPY estafette-extension-docker.exe C:/estafette-extension-docker.exe
+
+ENV ESTAFETTE_LOG_FORMAT="console"
+
+USER ContainerAdministrator
+
+RUN setx /m PATH "%PATH%;C:\dod"
+
+ENTRYPOINT ["C:/estafette-extension-docker.exe"]
