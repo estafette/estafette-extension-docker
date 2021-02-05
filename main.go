@@ -280,7 +280,7 @@ func main() {
 		loginIfRequired(credentials, false, containerPath)
 		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 
-		if !*noCache {
+		if !*noCache && runtime.GOOS != "windows" {
 			log.Info().Msgf("Pulling docker image %v to use as cache during build...", cacheContainerPath)
 			pullArgs := []string{
 				"pull",
@@ -300,7 +300,7 @@ func main() {
 		args := []string{
 			"build",
 		}
-		if *noCache {
+		if *noCache || runtime.GOOS == "windows" {
 			args = append(args, "--no-cache")
 		}
 		args = append(args, "--tag", cacheContainerPath)
@@ -321,7 +321,7 @@ func main() {
 			args = append(args, "--build-arg", fmt.Sprintf("%v=%v", a, argValue))
 		}
 
-		if !*noCache {
+		if !*noCache && runtime.GOOS != "windows" {
 			args = append(args, "--cache-from", cacheContainerPath)
 		}
 		args = append(args, "--file", targetDockerfilePath)
@@ -419,7 +419,7 @@ func main() {
 				log.Fatal().Msg("When setting pushVersionTag to false you need at least one tag")
 			}
 
-			if !*noCache {
+			if !*noCache && runtime.GOOS != "windows" {
 				log.Info().Msgf("Pushing cache container image %v", cacheContainerPath)
 				pushArgs := []string{
 					"push",
