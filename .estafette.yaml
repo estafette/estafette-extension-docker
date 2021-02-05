@@ -184,7 +184,7 @@ releases:
         container: docker-test
         versionTagSuffix: -suffix
         inline: |
-          FROM mcr.microsoft.com/windows/servercore:ltsc2019
+          FROM mcr.microsoft.com/windows/nanoserver:1809
 
           RUN netsh interface ipv4 show interfaces
         repositories:
