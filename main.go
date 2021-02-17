@@ -551,6 +551,21 @@ func main() {
 
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
+		// run trivy for CRITICAL
+		severityArgument := "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+		switch strings.ToUpper(*minimumSeverityToFail) {
+		case "UNKNOWN":
+			severityArgument = "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+		case "LOW":
+			severityArgument = "LOW,MEDIUM,HIGH,CRITICAL"
+		case "MEDIUM":
+			severityArgument = "MEDIUM,HIGH,CRITICAL"
+		case "HIGH":
+			severityArgument = "HIGH,CRITICAL"
+		case "CRITICAL":
+			severityArgument = "CRITICAL"
+		}
+
 		// update trivy db, ignore errors
 		log.Info().Msg("Updating trivy vulnerabilities database...")
 		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--download-db-only", containerPath})
@@ -562,8 +577,8 @@ func main() {
 		}
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
 
-		log.Info().Msgf("Scanning container image %v for vulnerabilities...", containerPath)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
+		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
 
 		if err != nil {
 			if strings.EqualFold(err.Error(), "exit status 1") {
