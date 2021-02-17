@@ -26,7 +26,7 @@ stages:
     action: build
     container: docker
     inline: |
-      FROM alpine:3.12
+      FROM alpine:3.13
 
       ARG DIVE_VERSION=0.9.2
 
@@ -214,7 +214,7 @@ releases:
     clone: true
     stages:
       build:
-        image: estafette/golang:1.15.7-nanoserver-1809
+        image: estafette/golang:1.16.0-nanoserver-1809
         shell: cmd
         env:
           CGO_ENABLED: 0
@@ -263,7 +263,7 @@ releases:
     clone: true
     stages:
       build:
-        image: estafette/golang:1.15.7-nanoserver-1809
+        image: estafette/golang:1.16.0-nanoserver-1809
         shell: cmd
         env:
           CGO_ENABLED: 0
@@ -312,7 +312,7 @@ releases:
     clone: true
     stages:
       build:
-        image: estafette/golang:1.15.7-nanoserver-1809
+        image: estafette/golang:1.16.0-nanoserver-1809
         shell: cmd
         env:
           CGO_ENABLED: 0
