@@ -129,6 +129,7 @@ stages:
       test-history-self:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: history
+        container: docker
         tag: ${ESTAFETTE_BUILD_VERSION}
         repositories:
         - extensions
