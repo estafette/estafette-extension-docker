@@ -128,7 +128,7 @@ func main() {
 	}
 
 	// validate inputs
-	validateRepositories(*repositories)
+	validateRepositories(*repositories, *action)
 
 	// split into arrays and set other variables
 	var repositoriesSlice []string
@@ -642,8 +642,8 @@ func main() {
 	}
 }
 
-func validateRepositories(repositories string) {
-	if repositories == "" {
+func validateRepositories(repositories, action string) {
+	if repositories == "" && action != "history" {
 		log.Fatal().Msg("Set `repositories:` to list at least one `- <repository>` (for example like `- extensions`)")
 	}
 }
