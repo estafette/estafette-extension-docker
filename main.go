@@ -597,7 +597,7 @@ func main() {
 		log.Info().Msgf("Inspecting container image %v layers...", containerPath)
 		command := "/dive"
 		if runtime.GOOS == "windows" {
-			command = "C:" + command
+			command = "dive"
 		}
 		os.Setenv("CI", "true")
 		foundation.RunCommandWithArgs(ctx, command, []string{containerPath})
