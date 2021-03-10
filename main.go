@@ -67,7 +67,7 @@ func main() {
 	kingpin.Parse()
 
 	// init log format from envvar ESTAFETTE_LOG_FORMAT
-	foundation.InitLoggingFromEnv(appgroup, app, version, branch, revision, buildDate)
+	foundation.InitLoggingFromEnv(foundation.NewApplicationInfo(appgroup, app, version, branch, revision, buildDate))
 
 	// create context to cancel commands on sigterm
 	ctx := foundation.InitCancellationContext(context.Background())
@@ -564,14 +564,27 @@ func main() {
 
 		loginIfRequired(credentials, false, sourceContainerPath)
 
-		// tag container with additional tag
 		log.Info().Msgf("Showing history for container image %v", sourceContainerPath)
 		historyArgs := []string{
 			"history",
 			"--human",
 			sourceContainerPath,
 		}
-		foundation.RunCommandWithArgs(ctx, "docker", historyArgs)
+
+		output, err := foundation.GetCommandWithArgsOutput(ctx, "docker", historyArgs)
+		if err != nil {
+			// pull source container first
+			log.Info().Msgf("Pulling container image %v", sourceContainerPath)
+			pullArgs := []string{
+				"pull",
+				sourceContainerPath,
+			}
+			foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
+
+			foundation.RunCommandWithArgs(ctx, "docker", historyArgs)
+		} else {
+			log.Info().Msg(output)
+		}
 
 	case "dive":
 
