@@ -10,7 +10,7 @@ RUN netsh interface ipv4 show subinterfaces; \
 	netsh interface ipv4 show subinterfaces;
 
 ENV DIVE_VERSION 0.10.0
-ENV DIVE_DOWNLOAD_URL https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_{DIVE_VERSION}_windows_amd64.zip
+ENV DIVE_DOWNLOAD_URL https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_${DIVE_VERSION}_windows_amd64.zip
 
 RUN Write-Host ('Downloading {0} to dive.zip ...' -f $env:DIVE_DOWNLOAD_URL); \
 	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
