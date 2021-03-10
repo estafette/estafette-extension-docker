@@ -34,6 +34,7 @@ var (
 	action                     = kingpin.Flag("action", "Any of the following actions: build, push, tag, history.").Envar("ESTAFETTE_EXTENSION_ACTION").String()
 	repositories               = kingpin.Flag("repositories", "List of the repositories the image needs to be pushed to or tagged in.").Envar("ESTAFETTE_EXTENSION_REPOSITORIES").String()
 	container                  = kingpin.Flag("container", "Name of the container to build, defaults to app label if present.").Envar("ESTAFETTE_EXTENSION_CONTAINER").String()
+	tag                        = kingpin.Flag("tag", "Tag for an image to show history for.").Envar("ESTAFETTE_EXTENSION_TAG").String()
 	tags                       = kingpin.Flag("tags", "List of tags the image needs to receive.").Envar("ESTAFETTE_EXTENSION_TAGS").String()
 	path                       = kingpin.Flag("path", "Directory to build docker container from, defaults to current working directory.").Default(".").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_PATH").String()
 	dockerfile                 = kingpin.Flag("dockerfile", "Dockerfile to build, defaults to Dockerfile.").Default("Dockerfile").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_DOCKERFILE").String()
@@ -550,16 +551,19 @@ func main() {
 		// tag: ${ESTAFETTE_BUILD_VERSION}
 
 		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
+		if *tag != "" {
+			sourceContainerPath = fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, *tag)
+		}
 
 		loginIfRequired(credentials, false, sourceContainerPath)
 
-		// pull source container first
-		log.Info().Msgf("Pulling container image %v", sourceContainerPath)
-		pullArgs := []string{
-			"pull",
-			sourceContainerPath,
-		}
-		foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
+		// // pull source container first
+		// log.Info().Msgf("Pulling container image %v", sourceContainerPath)
+		// pullArgs := []string{
+		// 	"pull",
+		// 	sourceContainerPath,
+		// }
+		// foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
 
 		// tag container with additional tag
 		log.Info().Msgf("Showing layers for container image %v", sourceContainerPath)
@@ -635,7 +639,7 @@ func main() {
 		}
 
 	default:
-		log.Fatal().Msg("Set `command: <command>` on this step to build, push or tag")
+		log.Fatal().Msg("Set `action: <action>` on this step to run build, push, tag or history")
 	}
 }
 
