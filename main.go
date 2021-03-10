@@ -566,8 +566,10 @@ func main() {
 
 		log.Info().Msgf("Showing history for container image %v", sourceContainerPath)
 		historyArgs := []string{
+			"image",
 			"history",
 			"--human",
+			"--no-trunc",
 			sourceContainerPath,
 		}
 
