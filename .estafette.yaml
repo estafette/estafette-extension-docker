@@ -125,8 +125,6 @@ stages:
         action: history
         container: docker
         tag: latest
-        repositories:
-        - extensions
 
       test-dive:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
