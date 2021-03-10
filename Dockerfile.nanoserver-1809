@@ -40,6 +40,6 @@ ENV ESTAFETTE_LOG_FORMAT="console"
 
 USER ContainerAdministrator
 
-RUN setx /m PATH "%PATH%;C:\dod"
+RUN setx /m PATH "%PATH%;C:\dod;C:\dive"
 
 ENTRYPOINT ["C:/estafette-extension-docker.exe"]
