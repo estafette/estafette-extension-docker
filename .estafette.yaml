@@ -126,6 +126,13 @@ stages:
         container: docker
         tag: latest
 
+      test-history-self:
+        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+        action: history
+        tag: ${ESTAFETTE_BUILD_VERSION}
+        repositories:
+        - extensions
+
       test-dive:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: dive
