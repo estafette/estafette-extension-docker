@@ -31,7 +31,7 @@ var (
 
 var (
 	// flags
-	action                     = kingpin.Flag("action", "Any of the following actions: build, push, tag.").Envar("ESTAFETTE_EXTENSION_ACTION").String()
+	action                     = kingpin.Flag("action", "Any of the following actions: build, push, tag, history.").Envar("ESTAFETTE_EXTENSION_ACTION").String()
 	repositories               = kingpin.Flag("repositories", "List of the repositories the image needs to be pushed to or tagged in.").Envar("ESTAFETTE_EXTENSION_REPOSITORIES").String()
 	container                  = kingpin.Flag("container", "Name of the container to build, defaults to app label if present.").Envar("ESTAFETTE_EXTENSION_CONTAINER").String()
 	tags                       = kingpin.Flag("tags", "List of tags the image needs to receive.").Envar("ESTAFETTE_EXTENSION_TAGS").String()
@@ -534,6 +534,41 @@ func main() {
 				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
 			}
 		}
+
+	case "history":
+
+		// minimal using defaults
+
+		// image: extensions/docker:stable
+		// action: history
+		// repositories:
+		// - extensions
+
+		// with defaults:
+
+		// container: ${ESTAFETTE_GIT_NAME}
+		// tag: ${ESTAFETTE_BUILD_VERSION}
+
+		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
+
+		loginIfRequired(credentials, false, sourceContainerPath)
+
+		// pull source container first
+		log.Info().Msgf("Pulling container image %v", sourceContainerPath)
+		pullArgs := []string{
+			"pull",
+			sourceContainerPath,
+		}
+		foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
+
+		// tag container with additional tag
+		log.Info().Msgf("Showing layers for container image %v", sourceContainerPath)
+		historyArgs := []string{
+			"history",
+			"--human",
+			sourceContainerPath,
+		}
+		foundation.RunCommandWithArgs(ctx, "docker", historyArgs)
 
 	case "dive":
 
