@@ -589,6 +589,9 @@ func main() {
 		}
 
 	case "dive":
+		if *tag != "" {
+			estafetteBuildVersionAsTag = *tag
+		}
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		log.Info().Msgf("Inspecting container image %v layers...", containerPath)
@@ -605,6 +608,9 @@ func main() {
 			log.Fatal().Msgf("Trivy is currently not supported for windows!")
 		}
 
+		if *tag != "" {
+			estafetteBuildVersionAsTag = *tag
+		}
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		// run trivy for all vulnerabilities by default
