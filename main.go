@@ -589,16 +589,15 @@ func main() {
 		}
 
 	case "dive":
-
-		if runtime.GOOS == "windows" {
-			log.Fatal().Msgf("Dive is currently not supported for windows!")
-		}
-
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
 		log.Info().Msgf("Inspecting container image %v layers...", containerPath)
+		command := "/dive"
+		if runtime.GOOS == "windows" {
+			command = "C:" + command
+		}
 		os.Setenv("CI", "true")
-		foundation.RunCommandWithArgs(ctx, "/dive", []string{containerPath})
+		foundation.RunCommandWithArgs(ctx, command, []string{containerPath})
 
 	case "trivy":
 
