@@ -120,6 +120,14 @@ stages:
         - /etc/ssl/certs/ca-certificates.crt
         - publish
 
+      test-history:
+        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+        action: history
+        container: docker
+        tag: latest
+        repositories:
+        - extensions
+
       test-dive:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: dive

@@ -548,25 +548,24 @@ func main() {
 		// with defaults:
 
 		// container: ${ESTAFETTE_GIT_NAME}
-		// tag: ${ESTAFETTE_BUILD_VERSION}
 
-		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
+		// and other paramers:
+
+		// tag: latest
+
+		sourceContainerPath := ""
+		if len(repositoriesSlice) > 0 {
+			sourceContainerPath += repositoriesSlice[0] + "/"
+		}
+		sourceContainerPath += *container
 		if *tag != "" {
-			sourceContainerPath = fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, *tag)
+			sourceContainerPath += ":" + *tag
 		}
 
 		loginIfRequired(credentials, false, sourceContainerPath)
 
-		// // pull source container first
-		// log.Info().Msgf("Pulling container image %v", sourceContainerPath)
-		// pullArgs := []string{
-		// 	"pull",
-		// 	sourceContainerPath,
-		// }
-		// foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
-
 		// tag container with additional tag
-		log.Info().Msgf("Showing layers for container image %v", sourceContainerPath)
+		log.Info().Msgf("Showing history for container image %v", sourceContainerPath)
 		historyArgs := []string{
 			"history",
 			"--human",
