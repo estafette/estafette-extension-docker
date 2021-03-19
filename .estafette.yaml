@@ -92,6 +92,12 @@ stages:
         inline: |
           FROM docker:19.03.13
 
+          RUN apk update \
+              && apk add --no-cache --upgrade \
+                  git \
+              && rm -rf /var/cache/apk/* \
+              && git version
+
           LABEL maintainer="estafette.io"
 
           COPY ${ESTAFETTE_GIT_NAME} /
