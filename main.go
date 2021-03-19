@@ -48,6 +48,7 @@ var (
 	noCache                    = kingpin.Flag("no-cache", "Indicates cache shouldn't be used when building the image.").Default("false").Envar("ESTAFETTE_EXTENSION_NO_CACHE").Bool()
 	expandEnvironmentVariables = kingpin.Flag("expand-envvars", "By default environment variables get replaced in the Dockerfile, use this flag to disable that behaviour").Default("true").Envar("ESTAFETTE_EXTENSION_EXPAND_VARIABLES").Bool()
 	dontExpand                 = kingpin.Flag("dont-expand", "Comma separate list of environment variable names that should not be expanded").Default("PATH").Envar("ESTAFETTE_EXTENSION_DONT_EXPAND").String()
+	buildx                     = kingpin.Flag("buildx", "Use experimental buildx builder.").Default("false").Envar("ESTAFETTE_EXTENSION_BUILDX").Bool()
 
 	gitSource = kingpin.Flag("git-source", "Repository source.").Envar("ESTAFETTE_GIT_SOURCE").String()
 	gitOwner  = kingpin.Flag("git-owner", "Repository owner.").Envar("ESTAFETTE_GIT_OWNER").String()
@@ -280,6 +281,11 @@ func main() {
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 		loginIfRequired(credentials, false, containerPath)
 		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
+
+		if *buildx {
+			log.Info().Msg("Using experimental buildx builder...")
+			foundation.RunCommand(ctx, "docker buildx install")
+		}
 
 		// build docker image
 		log.Info().Msgf("Building docker image %v...", containerPath)
