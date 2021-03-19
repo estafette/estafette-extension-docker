@@ -232,6 +232,10 @@ releases:
     builder:
       os: windows
       track: nanoserver-1809-dev
+    triggers:
+    - pipeline:
+        name: self
+        branch: .+
     clone: true
     stages:
       build:
