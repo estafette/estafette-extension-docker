@@ -281,16 +281,6 @@ func main() {
 		loginIfRequired(credentials, false, containerPath)
 		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 
-		if !*noCache && runtime.GOOS != "windows" {
-			log.Info().Msgf("Pulling docker image %v to use as cache during build...", cacheContainerPath)
-			pullArgs := []string{
-				"pull",
-				cacheContainerPath,
-			}
-			// ignore if it fails
-			foundation.RunCommandWithArgsExtended(ctx, "docker", pullArgs)
-		}
-
 		// build docker image
 		log.Info().Msgf("Building docker image %v...", containerPath)
 
@@ -302,8 +292,14 @@ func main() {
 			"build",
 		}
 		if *noCache || runtime.GOOS == "windows" {
+			// disable use of local layer cache
 			args = append(args, "--no-cache")
 		}
+		if runtime.GOOS == "linux" {
+			// ensure useful output in combination with buildkit
+			args = append(args, "--progress", "plain")
+		}
+		// set full image name
 		args = append(args, "--tag", cacheContainerPath)
 		for _, r := range repositoriesSlice {
 			args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
@@ -317,13 +313,15 @@ func main() {
 		if *target != "" {
 			args = append(args, "--target", *target)
 		}
+		// add optional build args
 		for _, a := range argsSlice {
 			argValue := os.Getenv(a)
 			args = append(args, "--build-arg", fmt.Sprintf("%v=%v", a, argValue))
 		}
-
 		if !*noCache && runtime.GOOS != "windows" {
+			// cache from remote image
 			args = append(args, "--cache-from", cacheContainerPath)
+			args = append(args, "--build-arg", "BUILDKIT_INLINE_CACHE=1")
 		}
 		args = append(args, "--file", targetDockerfilePath)
 		args = append(args, *path)
