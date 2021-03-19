@@ -295,10 +295,6 @@ func main() {
 			// disable use of local layer cache
 			args = append(args, "--no-cache")
 		}
-		if runtime.GOOS == "linux" {
-			// ensure useful output in combination with buildkit
-			args = append(args, "--progress", "plain")
-		}
 		// set full image name
 		args = append(args, "--tag", cacheContainerPath)
 		for _, r := range repositoriesSlice {

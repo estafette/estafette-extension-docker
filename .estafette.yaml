@@ -54,7 +54,8 @@ stages:
       COPY --from=0 /tmp /tmp
 
       ENV PATH="/dod:$PATH" \
-          ESTAFETTE_LOG_FORMAT="console"
+          ESTAFETTE_LOG_FORMAT="console" \
+          BUILDKIT_PROGRESS="plain"
 
       ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
     repositories:
