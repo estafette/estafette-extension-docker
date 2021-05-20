@@ -140,6 +140,7 @@ stages:
         path: ./publish-2
         copy:
         - /etc/ssl/certs/ca-certificates.crt
+        - ./
 
       test-build-from-private-registry:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
