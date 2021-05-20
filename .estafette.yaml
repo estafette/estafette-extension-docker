@@ -123,15 +123,10 @@ stages:
               && rm -rf /var/cache/apk/* \
               && git version
 
-          COPY . .
-
-          RUN go build
-
           FROM golang:1.16-alpine AS runtime
 
           LABEL maintainer="estafette.io"
 
-          COPY --from=0 /estafette-work/${ESTAFETTE_GIT_NAME} /
           COPY ca-certificates.crt /etc/ssl/certs/
 
           ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
@@ -140,7 +135,6 @@ stages:
         path: ./publish-2
         copy:
         - /etc/ssl/certs/ca-certificates.crt
-        - ./
 
       test-build-from-private-registry:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
