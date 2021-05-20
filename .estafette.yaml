@@ -137,7 +137,7 @@ stages:
           ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
         repositories:
         - extensions
-        path: ./publish
+        path: ./publish-2
         copy:
         - /etc/ssl/certs/ca-certificates.crt
 
