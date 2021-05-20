@@ -267,11 +267,14 @@ func main() {
 
 		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
 		for _, i := range fromImagePaths {
-			loginIfRequired(credentials, false, i)
+			if i.isOfficialDockerHubImage {
+				continue
+			}
+			loginIfRequired(credentials, false, i.imagePath)
 			log.Info().Msgf("Pulling container image %v", i)
 			pullArgs := []string{
 				"pull",
-				i,
+				i.imagePath,
 			}
 			foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
 		}
@@ -756,12 +759,17 @@ var (
 	imagesFromDockerFileRegex *regexp.Regexp
 )
 
-func getFromImagePathsFromDockerfile(dockerfileContent string) ([]string, error) {
+type fromImage struct {
+	imagePath                string
+	isOfficialDockerHubImage bool
+}
 
-	containerImages := []string{}
+func getFromImagePathsFromDockerfile(dockerfileContent string) ([]fromImage, error) {
+
+	containerImages := []fromImage{}
 
 	if imagesFromDockerFileRegex == nil {
-		imagesFromDockerFileRegex = regexp.MustCompile(`(?im)^FROM\s*([^\s]+)(\s*AS\s[a-zA-Z0-9]+)?\s*$`)
+		imagesFromDockerFileRegex = regexp.MustCompile(`(?mi)^\s*FROM\s+([^\s]+)(\s+AS\s+[a-zA-Z0-9]+)?\s*$`)
 	}
 
 	matches := imagesFromDockerFileRegex.FindAllStringSubmatch(dockerfileContent, -1)
@@ -769,10 +777,11 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]string, error)
 	if len(matches) > 0 {
 		for _, m := range matches {
 			if len(m) > 1 {
-				// check if it's not an official docker hub image
-				if strings.Count(m[1], "/") != 0 && !strings.Contains(m[1], "$") {
-					containerImages = append(containerImages, m[1])
-				}
+				image := m[1]
+				containerImages = append(containerImages, fromImage{
+					imagePath:                image,
+					isOfficialDockerHubImage: strings.Count(image, "/") == 0 || strings.Contains(image, "$"),
+				})
 			}
 		}
 	}
