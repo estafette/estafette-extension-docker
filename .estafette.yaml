@@ -125,7 +125,7 @@ stages:
 
           COPY . .
 
-          RUN docker build
+          RUN go build
 
           FROM docker:19.03.13 AS runtime
 
