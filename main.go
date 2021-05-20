@@ -299,11 +299,11 @@ func main() {
 
 			// build every layer separately and push it to registry to be used as cache next time
 			multiCacheFromArgs := []string{}
-			for i := range fromImagePaths {
+			for index, i := range fromImagePaths {
 
-				log.Info().Msgf("Building layer %v...", i)
+				log.Info().Msgf("Building layer %v...", i.imagePath)
 
-				gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v-%v", *gitBranch, i))
+				gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v-%v", *gitBranch, i.imagePath))
 				cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 				multiCacheFromArgs = append(multiCacheFromArgs, cacheContainerPath)
 
@@ -312,7 +312,7 @@ func main() {
 				}
 				// set full image name
 				args = append(args, "--tag", cacheContainerPath)
-				if i == len(fromImagePaths)-1 {
+				if index == len(fromImagePaths)-1 {
 					for _, r := range repositoriesSlice {
 						args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
 						for _, t := range tagsSlice {
@@ -324,7 +324,7 @@ func main() {
 					}
 				}
 
-				args = append(args, "--target", fmt.Sprint(i))
+				args = append(args, "--target", i.imagePath)
 
 				// add optional build args
 				for _, a := range argsSlice {
@@ -340,14 +340,12 @@ func main() {
 				args = append(args, *path)
 				foundation.RunCommandWithArgs(ctx, "docker", args)
 
-				if !*noCache && runtime.GOOS != "windows" {
-					log.Info().Msgf("Pushing cache container image %v", cacheContainerPath)
-					pushArgs := []string{
-						"push",
-						cacheContainerPath,
-					}
-					foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
+				log.Info().Msgf("Pushing cache container image %v", cacheContainerPath)
+				pushArgs := []string{
+					"push",
+					cacheContainerPath,
 				}
+				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
 			}
 
 		} else {
