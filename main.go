@@ -288,11 +288,13 @@ func main() {
 		fmt.Println(targetDockerfile)
 		log.Info().Msg("")
 
-		if *target == "" && !*noCache && runtime.GOOS != "windows" {
+		if *target == "" && !*noCache && runtime.GOOS != "windows" && len(fromImagePaths) > 0 {
 
 			// build every layer separately and push it to registry to be used as cache next time
 			multiCacheFromArgs := []string{}
 			for i := range fromImagePaths {
+
+				log.Info().Msgf("Building layer %v...", i)
 
 				gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v-%v", *gitBranch, i))
 				cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
@@ -774,6 +776,8 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]string, error)
 			}
 		}
 	}
+
+	log.Info().Msgf("Found %v stages in Dockerfile", len(containerImages))
 
 	return containerImages, nil
 }
