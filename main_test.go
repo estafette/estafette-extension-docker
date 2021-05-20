@@ -316,8 +316,10 @@ ENTRYPOINT ["/estafette-extension-docker"]`
 		assert.Equal(t, 2, len(containerImages))
 		assert.Equal(t, "prom/prometheus:latest", containerImages[0].imagePath)
 		assert.Equal(t, false, containerImages[0].isOfficialDockerHubImage)
+		assert.Equal(t, "builder", containerImages[0].stageName)
 		assert.Equal(t, "grafana/grafana:6.1.4", containerImages[1].imagePath)
 		assert.Equal(t, false, containerImages[1].isOfficialDockerHubImage)
+		assert.Equal(t, "", containerImages[1].stageName)
 	})
 }
 

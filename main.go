@@ -155,7 +155,7 @@ func main() {
 	if *versionTagSuffix != "" {
 		estafetteBuildVersionAsTag = tidyTag(estafetteBuildVersionAsTag + "-" + *versionTagSuffix)
 	}
-	gitBranchAsTag := tidyTag(fmt.Sprintf("cache-%v", *gitBranch))
+	gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v", *gitBranch))
 
 	switch *action {
 	case "build":
@@ -266,7 +266,11 @@ func main() {
 		foundation.HandleError(err)
 
 		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
+		allStagesHaveName := true
 		for _, i := range fromImagePaths {
+			if i.stageName == "" {
+				allStagesHaveName = false
+			}
 			if i.isOfficialDockerHubImage {
 				continue
 			}
@@ -291,7 +295,7 @@ func main() {
 		fmt.Println(targetDockerfile)
 		log.Info().Msg("")
 
-		if *target == "" && !*noCache && runtime.GOOS != "windows" && len(fromImagePaths) > 0 {
+		if allStagesHaveName && *target == "" && !*noCache && runtime.GOOS != "windows" && len(fromImagePaths) > 0 {
 
 			// build every layer separately and push it to registry to be used as cache next time
 			multiCacheFromArgs := []string{}
@@ -761,6 +765,7 @@ var (
 
 type fromImage struct {
 	imagePath                string
+	stageName                string
 	isOfficialDockerHubImage bool
 }
 
@@ -769,7 +774,7 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]fromImage, err
 	containerImages := []fromImage{}
 
 	if imagesFromDockerFileRegex == nil {
-		imagesFromDockerFileRegex = regexp.MustCompile(`(?mi)^\s*FROM\s+([^\s]+)(\s+AS\s+[a-zA-Z0-9]+)?\s*$`)
+		imagesFromDockerFileRegex = regexp.MustCompile(`(?mi)^\s*FROM\s+([^\s]+)(\s+AS\s+([^\s]+))?\s*$`)
 	}
 
 	matches := imagesFromDockerFileRegex.FindAllStringSubmatch(dockerfileContent, -1)
@@ -778,9 +783,14 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]fromImage, err
 		for _, m := range matches {
 			if len(m) > 1 {
 				image := m[1]
+				stageName := ""
+				if len(m) > 3 {
+					stageName = m[3]
+				}
 				containerImages = append(containerImages, fromImage{
 					imagePath:                image,
 					isOfficialDockerHubImage: strings.Count(image, "/") == 0 || strings.Contains(image, "$"),
+					stageName:                stageName,
 				})
 			}
 		}

@@ -110,6 +110,37 @@ stages:
         copy:
         - /etc/ssl/certs/ca-certificates.crt
 
+      test-multistage-build:
+        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+        action: build
+        container: docker-test
+        inline: |
+          FROM docker:19.03.13 AS builder
+
+          RUN apk update \
+              && apk add --no-cache --upgrade \
+                  git \
+              && rm -rf /var/cache/apk/* \
+              && git version
+
+          COPY . .
+
+          RUN docker build
+
+          FROM docker:19.03.13 AS runtime
+
+          LABEL maintainer="estafette.io"
+
+          COPY --from=0 /estafette-work/${ESTAFETTE_GIT_NAME} /
+          COPY ca-certificates.crt /etc/ssl/certs/
+
+          ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
+        repositories:
+        - extensions
+        path: ./publish
+        copy:
+        - /etc/ssl/certs/ca-certificates.crt
+
       test-build-from-private-registry:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: build
