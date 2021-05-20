@@ -115,7 +115,7 @@ stages:
         action: build
         container: docker-test
         inline: |
-          FROM docker:19.03.13 AS builder
+          FROM golang:1.16-alpine AS builder
 
           RUN apk update \
               && apk add --no-cache --upgrade \
@@ -127,7 +127,7 @@ stages:
 
           RUN go build
 
-          FROM docker:19.03.13 AS runtime
+          FROM golang:1.16-alpine AS runtime
 
           LABEL maintainer="estafette.io"
 
