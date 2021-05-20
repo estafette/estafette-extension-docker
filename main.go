@@ -303,7 +303,7 @@ func main() {
 
 				log.Info().Msgf("Building layer %v...", i.imagePath)
 
-				gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v-%v", *gitBranch, i.imagePath))
+				gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v-%v", *gitBranch, i.stageName))
 				cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 				multiCacheFromArgs = append(multiCacheFromArgs, cacheContainerPath)
 
@@ -324,7 +324,7 @@ func main() {
 					}
 				}
 
-				args = append(args, "--target", i.imagePath)
+				args = append(args, "--target", i.stageName)
 
 				// add optional build args
 				for _, a := range argsSlice {

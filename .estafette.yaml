@@ -182,6 +182,7 @@ stages:
       test-trivy:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: trivy
+        severity: critical
         container: docker
         repositories:
         - extensions
