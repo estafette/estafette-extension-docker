@@ -654,6 +654,8 @@ func main() {
 			log.Fatal().Msgf("Trivy is currently not supported for windows!")
 		}
 
+		foundation.RunCommand(ctx, "/trivy --version")
+
 		if *tag != "" {
 			estafetteBuildVersionAsTag = *tag
 		}
