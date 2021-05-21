@@ -227,15 +227,30 @@ func TestGetCredentialsForContainers(t *testing.T) {
 }
 
 func TestGetFromImagePathsFromDockerfile(t *testing.T) {
-	t.Run("ReturnsNoContainerImagesIfOnlyFromUsesOfficialDockerHubImage", func(t *testing.T) {
+	t.Run("ReturnContainerImagesIfFromUsesOfficialDockerHubImage", func(t *testing.T) {
 
-		dockerfileContent := "FROM nginx"
+		dockerfileContent := `FROM docker:19.03.13
+
+RUN apk update \
+    && apk add --no-cache --upgrade \
+        git \
+    && rm -rf /var/cache/apk/* \
+    && git version
+
+LABEL maintainer="estafette.io"
+
+COPY estafette-extension-docker /
+COPY ca-certificates.crt /etc/ssl/certs/
+
+ENTRYPOINT ["/estafette-extension-docker"]`
 
 		// act
 		containerImages, err := getFromImagePathsFromDockerfile(dockerfileContent)
 
 		assert.Nil(t, err)
-		assert.Equal(t, 0, len(containerImages))
+		assert.Equal(t, 1, len(containerImages))
+		assert.Equal(t, "docker:19.03.13", containerImages[0].imagePath)
+		assert.Equal(t, true, containerImages[0].isOfficialDockerHubImage)
 	})
 
 	t.Run("ReturnsContainerImageForFromWithoutTag", func(t *testing.T) {
@@ -247,7 +262,8 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(containerImages))
-		assert.Equal(t, "prom/prometheus", containerImages[0])
+		assert.Equal(t, "prom/prometheus", containerImages[0].imagePath)
+		assert.Equal(t, false, containerImages[0].isOfficialDockerHubImage)
 	})
 
 	t.Run("ReturnsContainerImageForFromWithTag", func(t *testing.T) {
@@ -259,7 +275,8 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(containerImages))
-		assert.Equal(t, "prom/prometheus:latest", containerImages[0])
+		assert.Equal(t, "prom/prometheus:latest", containerImages[0].imagePath)
+		assert.Equal(t, false, containerImages[0].isOfficialDockerHubImage)
 	})
 
 	t.Run("ReturnsContainerImageForFromWithTagAndAsAlias", func(t *testing.T) {
@@ -271,7 +288,8 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(containerImages))
-		assert.Equal(t, "prom/prometheus:latest", containerImages[0])
+		assert.Equal(t, "prom/prometheus:latest", containerImages[0].imagePath)
+		assert.Equal(t, false, containerImages[0].isOfficialDockerHubImage)
 	})
 
 	t.Run("ReturnsContainerImageForFromWithTagAndAsAlias", func(t *testing.T) {
@@ -283,7 +301,8 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(containerImages))
-		assert.Equal(t, "prom/prometheus:latest", containerImages[0])
+		assert.Equal(t, "prom/prometheus:latest", containerImages[0].imagePath)
+		assert.Equal(t, false, containerImages[0].isOfficialDockerHubImage)
 	})
 
 	t.Run("ReturnsContainerImagesFromMultiStageFile", func(t *testing.T) {
@@ -295,8 +314,12 @@ func TestGetFromImagePathsFromDockerfile(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, 2, len(containerImages))
-		assert.Equal(t, "prom/prometheus:latest", containerImages[0])
-		assert.Equal(t, "grafana/grafana:6.1.4", containerImages[1])
+		assert.Equal(t, "prom/prometheus:latest", containerImages[0].imagePath)
+		assert.Equal(t, false, containerImages[0].isOfficialDockerHubImage)
+		assert.Equal(t, "builder", containerImages[0].stageName)
+		assert.Equal(t, "grafana/grafana:6.1.4", containerImages[1].imagePath)
+		assert.Equal(t, false, containerImages[1].isOfficialDockerHubImage)
+		assert.Equal(t, "", containerImages[1].stageName)
 	})
 }
 

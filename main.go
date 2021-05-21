@@ -155,7 +155,7 @@ func main() {
 	if *versionTagSuffix != "" {
 		estafetteBuildVersionAsTag = tidyTag(estafetteBuildVersionAsTag + "-" + *versionTagSuffix)
 	}
-	gitBranchAsTag := tidyTag(fmt.Sprintf("cache-%v", *gitBranch))
+	gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v", *gitBranch))
 
 	switch *action {
 	case "build":
@@ -266,12 +266,19 @@ func main() {
 		foundation.HandleError(err)
 
 		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
+		allStagesHaveName := true
 		for _, i := range fromImagePaths {
-			loginIfRequired(credentials, false, i)
+			if i.stageName == "" {
+				allStagesHaveName = false
+			}
+			if i.isOfficialDockerHubImage {
+				continue
+			}
+			loginIfRequired(credentials, false, i.imagePath)
 			log.Info().Msgf("Pulling container image %v", i)
 			pullArgs := []string{
 				"pull",
-				i,
+				i.imagePath,
 			}
 			foundation.RunCommandWithArgs(ctx, "docker", pullArgs)
 		}
@@ -288,40 +295,95 @@ func main() {
 		fmt.Println(targetDockerfile)
 		log.Info().Msg("")
 
-		args := []string{
-			"build",
-		}
-		if *noCache || runtime.GOOS == "windows" {
-			// disable use of local layer cache
-			args = append(args, "--no-cache")
-		}
-		// set full image name
-		args = append(args, "--tag", cacheContainerPath)
-		for _, r := range repositoriesSlice {
-			args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
-			for _, t := range tagsSlice {
-				if r == repositoriesSlice[0] && (t == estafetteBuildVersionAsTag || t == gitBranchAsTag) {
-					continue
+		if allStagesHaveName && *target == "" && !*noCache && runtime.GOOS != "windows" && len(fromImagePaths) > 0 {
+
+			// build every layer separately and push it to registry to be used as cache next time
+			multiCacheFromArgs := []string{}
+			for index, i := range fromImagePaths {
+
+				log.Info().Msgf("Building layer %v...", i.imagePath)
+
+				gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v-%v", *gitBranch, i.stageName))
+				cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
+				multiCacheFromArgs = append(multiCacheFromArgs, cacheContainerPath)
+
+				args := []string{
+					"build",
 				}
-				args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, t))
+				// set full image name
+				args = append(args, "--tag", cacheContainerPath)
+				if index == len(fromImagePaths)-1 {
+					for _, r := range repositoriesSlice {
+						args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
+						for _, t := range tagsSlice {
+							if r == repositoriesSlice[0] && (t == estafetteBuildVersionAsTag || t == gitBranchAsTag) {
+								continue
+							}
+							args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, t))
+						}
+					}
+				}
+
+				args = append(args, "--target", i.stageName)
+
+				// add optional build args
+				for _, a := range argsSlice {
+					argValue := os.Getenv(a)
+					args = append(args, "--build-arg", fmt.Sprintf("%v=%v", a, argValue))
+				}
+				// cache from remote image
+				for _, cf := range multiCacheFromArgs {
+					args = append(args, "--cache-from", cf)
+				}
+				args = append(args, "--build-arg", "BUILDKIT_INLINE_CACHE=1")
+				args = append(args, "--file", targetDockerfilePath)
+				args = append(args, *path)
+				foundation.RunCommandWithArgs(ctx, "docker", args)
+
+				log.Info().Msgf("Pushing cache container image %v", cacheContainerPath)
+				pushArgs := []string{
+					"push",
+					cacheContainerPath,
+				}
+				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
 			}
+
+		} else {
+			args := []string{
+				"build",
+			}
+			if *noCache || runtime.GOOS == "windows" {
+				// disable use of local layer cache
+				args = append(args, "--no-cache")
+			}
+			// set full image name
+			args = append(args, "--tag", cacheContainerPath)
+			for _, r := range repositoriesSlice {
+				args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
+				for _, t := range tagsSlice {
+					if r == repositoriesSlice[0] && t == estafetteBuildVersionAsTag {
+						continue
+					}
+					args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, t))
+				}
+			}
+			if *target != "" {
+				args = append(args, "--target", *target)
+			}
+			// add optional build args
+			for _, a := range argsSlice {
+				argValue := os.Getenv(a)
+				args = append(args, "--build-arg", fmt.Sprintf("%v=%v", a, argValue))
+			}
+			if !*noCache && runtime.GOOS != "windows" {
+				// cache from remote image
+				args = append(args, "--cache-from", cacheContainerPath)
+				args = append(args, "--build-arg", "BUILDKIT_INLINE_CACHE=1")
+			}
+			args = append(args, "--file", targetDockerfilePath)
+			args = append(args, *path)
+			foundation.RunCommandWithArgs(ctx, "docker", args)
 		}
-		if *target != "" {
-			args = append(args, "--target", *target)
-		}
-		// add optional build args
-		for _, a := range argsSlice {
-			argValue := os.Getenv(a)
-			args = append(args, "--build-arg", fmt.Sprintf("%v=%v", a, argValue))
-		}
-		if !*noCache && runtime.GOOS != "windows" {
-			// cache from remote image
-			args = append(args, "--cache-from", cacheContainerPath)
-			args = append(args, "--build-arg", "BUILDKIT_INLINE_CACHE=1")
-		}
-		args = append(args, "--file", targetDockerfilePath)
-		args = append(args, *path)
-		foundation.RunCommandWithArgs(ctx, "docker", args)
 
 		if runtime.GOOS == "windows" {
 			return
@@ -381,7 +443,6 @@ func main() {
 		// - dev
 
 		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
-		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
@@ -416,15 +477,6 @@ func main() {
 
 			if !*pushVersionTag && len(tagsSlice) == 0 {
 				log.Fatal().Msg("When setting pushVersionTag to false you need at least one tag")
-			}
-
-			if !*noCache && runtime.GOOS != "windows" {
-				log.Info().Msgf("Pushing cache container image %v", cacheContainerPath)
-				pushArgs := []string{
-					"push",
-					cacheContainerPath,
-				}
-				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
 			}
 
 			// push additional tags
@@ -602,6 +654,8 @@ func main() {
 			log.Fatal().Msgf("Trivy is currently not supported for windows!")
 		}
 
+		foundation.RunCommand(ctx, "/trivy --version")
+
 		if *tag != "" {
 			estafetteBuildVersionAsTag = *tag
 		}
@@ -709,12 +763,18 @@ var (
 	imagesFromDockerFileRegex *regexp.Regexp
 )
 
-func getFromImagePathsFromDockerfile(dockerfileContent string) ([]string, error) {
+type fromImage struct {
+	imagePath                string
+	stageName                string
+	isOfficialDockerHubImage bool
+}
 
-	containerImages := []string{}
+func getFromImagePathsFromDockerfile(dockerfileContent string) ([]fromImage, error) {
+
+	containerImages := []fromImage{}
 
 	if imagesFromDockerFileRegex == nil {
-		imagesFromDockerFileRegex = regexp.MustCompile(`(?im)^FROM\s*([^\s]+)(\s*AS\s[a-zA-Z0-9]+)?\s*$`)
+		imagesFromDockerFileRegex = regexp.MustCompile(`(?mi)^\s*FROM\s+([^\s]+)(\s+AS\s+([^\s]+))?\s*$`)
 	}
 
 	matches := imagesFromDockerFileRegex.FindAllStringSubmatch(dockerfileContent, -1)
@@ -722,13 +782,21 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]string, error)
 	if len(matches) > 0 {
 		for _, m := range matches {
 			if len(m) > 1 {
-				// check if it's not an official docker hub image
-				if strings.Count(m[1], "/") != 0 && !strings.Contains(m[1], "$") {
-					containerImages = append(containerImages, m[1])
+				image := m[1]
+				stageName := ""
+				if len(m) > 3 {
+					stageName = m[3]
 				}
+				containerImages = append(containerImages, fromImage{
+					imagePath:                image,
+					isOfficialDockerHubImage: strings.Count(image, "/") == 0 || strings.Contains(image, "$"),
+					stageName:                stageName,
+				})
 			}
 		}
 	}
+
+	log.Info().Msgf("Found %v stages in Dockerfile", len(containerImages))
 
 	return containerImages, nil
 }

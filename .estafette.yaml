@@ -13,7 +13,7 @@ version:
 
 stages:
   build:
-    image: golang:1.16.0-alpine
+    image: golang:1.16-alpine
     env:
       CGO_ENABLED: 0
       GOOS: linux
@@ -110,6 +110,32 @@ stages:
         copy:
         - /etc/ssl/certs/ca-certificates.crt
 
+      test-multistage-build:
+        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+        action: build
+        container: docker-test
+        inline: |
+          FROM golang:1.16-alpine AS builder
+
+          RUN apk update \
+              && apk add --no-cache --upgrade \
+                  git \
+              && rm -rf /var/cache/apk/* \
+              && git version
+
+          FROM golang:1.16-alpine AS runtime
+
+          LABEL maintainer="estafette.io"
+
+          COPY ca-certificates.crt /etc/ssl/certs/
+
+          ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
+        repositories:
+        - extensions
+        path: ./publish-2
+        copy:
+        - /etc/ssl/certs/ca-certificates.crt
+
       test-build-from-private-registry:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: build
@@ -151,6 +177,7 @@ stages:
       test-trivy:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: trivy
+        severity: critical
         container: docker
         repositories:
         - extensions
