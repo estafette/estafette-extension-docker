@@ -155,7 +155,6 @@ func main() {
 	if *versionTagSuffix != "" {
 		estafetteBuildVersionAsTag = tidyTag(estafetteBuildVersionAsTag + "-" + *versionTagSuffix)
 	}
-	gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v", *gitBranch))
 
 	switch *action {
 	case "build":
@@ -266,11 +265,7 @@ func main() {
 		foundation.HandleError(err)
 
 		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
-		allStagesHaveName := true
 		for _, i := range fromImagePaths {
-			if i.stageName == "" {
-				allStagesHaveName = false
-			}
 			if i.isOfficialDockerHubImage {
 				continue
 			}
@@ -286,7 +281,6 @@ func main() {
 		// login to registry for destination container image
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 		loginIfRequired(credentials, false, containerPath)
-		cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
 
 		// build docker image
 		log.Info().Msgf("Building docker image %v...", containerPath)
@@ -295,94 +289,73 @@ func main() {
 		fmt.Println(targetDockerfile)
 		log.Info().Msg("")
 
-		if allStagesHaveName && *target == "" && !*noCache && runtime.GOOS != "windows" && len(fromImagePaths) > 0 {
+		// build every layer separately and push it to registry to be used as cache next time
+		dockerLayerCachingPaths := []string{}
+		for index, i := range fromImagePaths {
+			isFinalLayer := index == len(fromImagePaths)-1
+			isCacheable := !*noCache && runtime.GOOS != "windows"
+			dockerLayerCachingTag := "dlc"
 
-			// build every layer separately and push it to registry to be used as cache next time
-			multiCacheFromArgs := []string{}
-			for index, i := range fromImagePaths {
-
-				log.Info().Msgf("Building layer %v...", i.imagePath)
-
-				gitBranchAsTag := tidyTag(fmt.Sprintf("dlc-%v-%v", *gitBranch, i.stageName))
-				cacheContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, gitBranchAsTag)
-				multiCacheFromArgs = append(multiCacheFromArgs, cacheContainerPath)
-
-				args := []string{
-					"build",
+			if !isFinalLayer {
+				if i.stageName == "" || !isCacheable {
+					// skip building intermediate layers for caching
+					continue
 				}
-				// set full image name
-				args = append(args, "--tag", cacheContainerPath)
-				if index == len(fromImagePaths)-1 {
-					for _, r := range repositoriesSlice {
-						args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
-						for _, t := range tagsSlice {
-							if r == repositoriesSlice[0] && (t == estafetteBuildVersionAsTag || t == gitBranchAsTag) {
-								continue
-							}
-							args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, t))
-						}
-					}
-				}
-
-				args = append(args, "--target", i.stageName)
-
-				// add optional build args
-				for _, a := range argsSlice {
-					argValue := os.Getenv(a)
-					args = append(args, "--build-arg", fmt.Sprintf("%v=%v", a, argValue))
-				}
-				// cache from remote image
-				for _, cf := range multiCacheFromArgs {
-					args = append(args, "--cache-from", cf)
-				}
-				args = append(args, "--build-arg", "BUILDKIT_INLINE_CACHE=1")
-				args = append(args, "--file", targetDockerfilePath)
-				args = append(args, *path)
-				foundation.RunCommandWithArgs(ctx, "docker", args)
-
-				log.Info().Msgf("Pushing cache container image %v", cacheContainerPath)
-				pushArgs := []string{
-					"push",
-					cacheContainerPath,
-				}
-				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
+				log.Info().Msgf("Building layer %v...", i.stageName)
+				dockerLayerCachingTag = tidyTag(fmt.Sprintf("dlc-%v", i.stageName))
 			}
 
-		} else {
+			dockerLayerCachingPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, dockerLayerCachingTag)
+			dockerLayerCachingPaths = append(dockerLayerCachingPaths, dockerLayerCachingPath)
+
 			args := []string{
 				"build",
 			}
-			if *noCache || runtime.GOOS == "windows" {
+
+			if isCacheable {
+				args = append(args, "--build-arg", "BUILDKIT_INLINE_CACHE=1")
+				// cache from remote image
+				for _, cf := range dockerLayerCachingPaths {
+					args = append(args, "--cache-from", cf)
+				}
+				args = append(args, "--tag", dockerLayerCachingPath)
+			} else {
 				// disable use of local layer cache
 				args = append(args, "--no-cache")
 			}
-			// set full image name
-			args = append(args, "--tag", cacheContainerPath)
-			for _, r := range repositoriesSlice {
-				args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
-				for _, t := range tagsSlice {
-					if r == repositoriesSlice[0] && t == estafetteBuildVersionAsTag {
-						continue
+
+			if isFinalLayer {
+				for _, r := range repositoriesSlice {
+					args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
+					for _, t := range tagsSlice {
+						if r == repositoriesSlice[0] && (t == estafetteBuildVersionAsTag || t == dockerLayerCachingTag) {
+							continue
+						}
+						args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, t))
 					}
-					args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, t))
 				}
+			} else {
+				args = append(args, "--target", i.stageName)
 			}
-			if *target != "" {
-				args = append(args, "--target", *target)
-			}
+
 			// add optional build args
 			for _, a := range argsSlice {
 				argValue := os.Getenv(a)
 				args = append(args, "--build-arg", fmt.Sprintf("%v=%v", a, argValue))
 			}
-			if !*noCache && runtime.GOOS != "windows" {
-				// cache from remote image
-				args = append(args, "--cache-from", cacheContainerPath)
-				args = append(args, "--build-arg", "BUILDKIT_INLINE_CACHE=1")
-			}
+
 			args = append(args, "--file", targetDockerfilePath)
 			args = append(args, *path)
 			foundation.RunCommandWithArgs(ctx, "docker", args)
+
+			if isCacheable {
+				log.Info().Msgf("Pushing cache container image %v", dockerLayerCachingPath)
+				pushArgs := []string{
+					"push",
+					dockerLayerCachingPath,
+				}
+				foundation.RunCommandWithArgs(ctx, "docker", pushArgs)
+			}
 		}
 
 		if runtime.GOOS == "windows" {
@@ -482,7 +455,7 @@ func main() {
 			// push additional tags
 			for _, t := range tagsSlice {
 
-				if r == repositoriesSlice[0] && (t == estafetteBuildVersionAsTag || t == gitBranchAsTag) {
+				if r == repositoriesSlice[0] && t == estafetteBuildVersionAsTag {
 					continue
 				}
 
