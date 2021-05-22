@@ -301,7 +301,7 @@ func main() {
 					// skip building intermediate layers for caching
 					continue
 				}
-				log.Info().Msgf("Building layer %v...", i.imagePath)
+				log.Info().Msgf("Building layer %v...", i.stageName)
 				dockerLayerCachingTag = tidyTag(fmt.Sprintf("dlc-%v", i.stageName))
 			}
 
