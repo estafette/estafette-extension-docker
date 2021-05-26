@@ -38,7 +38,7 @@ stages:
         action: build
         container: docker-test
         inline: |
-          FROM docker:19.03.13
+          FROM docker:latest
 
           RUN apk update \
               && apk add --no-cache --upgrade \
@@ -61,7 +61,7 @@ stages:
       test-multistage-build:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: build
-        container: docker-test
+        container: docker-test-2
         inline: |
           FROM golang:1.16-alpine AS builder
 
@@ -90,7 +90,7 @@ stages:
         no-cache: true
         container: hugo-test
         inline: |
-          FROM estafette/hugo:0.62.2
+          FROM extensions/docker:latest
 
           COPY ca-certificates.crt /etc/ssl/certs/
           COPY publish /publish
