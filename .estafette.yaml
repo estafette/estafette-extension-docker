@@ -29,10 +29,7 @@ stages:
     repositories:
     - extensions
     path: ./publish
-    dontExpand:
-    - TRIVY_VERSION
-    copy:
-    - /etc/ssl/certs/ca-certificates.crt
+    expandVariables: false
 
   tests:
     parallelStages:
@@ -194,10 +191,7 @@ releases:
         repositories:
         - extensions
         path: ./publish
-        dontExpand:
-        - TRIVY_VERSION
-        copy:
-        - /etc/ssl/certs/ca-certificates.crt
+        expandVariables: false
 
       push-to-docker-hub:
         image: extensions/docker:stable

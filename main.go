@@ -55,7 +55,7 @@ var (
 	gitBranch = kingpin.Flag("git-branch", "Git branch to tag image with for improved caching.").Envar("ESTAFETTE_GIT_BRANCH").String()
 	appLabel  = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
 
-	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("CRITICAL").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_SEVERITY").String()
+	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("HIGH").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_SEVERITY").String()
 
 	credentialsPath    = kingpin.Flag("credentials-path", "Path to file with container registry credentials configured at the CI server, passed in to this trusted extension.").Default("/credentials/container_registry.json").String()
 	githubAPITokenPath = kingpin.Flag("githubApiToken-path", "Path to file with Github api token credentials configured at the CI server, passed in to this trusted extension.").Default("/credentials/github_api_token.json").String()
@@ -360,11 +360,6 @@ func main() {
 
 		if runtime.GOOS == "windows" {
 			return
-		}
-
-		// run trivy for CRITICAL vulnerabilities by default
-		if *minimumSeverityToFail == "" {
-			*minimumSeverityToFail = "CRITICAL"
 		}
 
 		// map severity param value to trivy severity
