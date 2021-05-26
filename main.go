@@ -55,7 +55,7 @@ var (
 	gitBranch = kingpin.Flag("git-branch", "Git branch to tag image with for improved caching.").Envar("ESTAFETTE_GIT_BRANCH").String()
 	appLabel  = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
 
-	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Envar("ESTAFETTE_EXTENSION_SEVERITY").String()
+	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("CRITICAL").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_SEVERITY").String()
 
 	credentialsPath    = kingpin.Flag("credentials-path", "Path to file with container registry credentials configured at the CI server, passed in to this trusted extension.").Default("/credentials/container_registry.json").String()
 	githubAPITokenPath = kingpin.Flag("githubApiToken-path", "Path to file with Github api token credentials configured at the CI server, passed in to this trusted extension.").Default("/credentials/github_api_token.json").String()
@@ -367,6 +367,7 @@ func main() {
 			*minimumSeverityToFail = "CRITICAL"
 		}
 
+		// map severity param value to trivy severity
 		severityArgument := "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
 		switch strings.ToUpper(*minimumSeverityToFail) {
 		case "UNKNOWN":
@@ -380,10 +381,6 @@ func main() {
 		case "CRITICAL":
 			severityArgument = "CRITICAL"
 		}
-
-		// update trivy db, ignore errors
-		log.Info().Msg("Updating trivy vulnerabilities database...")
-		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--download-db-only", containerPath})
 
 		log.Info().Msg("Saving docker image to file for scanning...")
 		tmpfile, err := ioutil.TempFile("", "*.tar")
@@ -608,75 +605,12 @@ func main() {
 		}
 
 	case "dive":
-		if *tag != "" {
-			estafetteBuildVersionAsTag = *tag
-		}
-		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
 
-		log.Info().Msgf("Inspecting container image %v layers...", containerPath)
-		command := "/dive"
-		if runtime.GOOS == "windows" {
-			command = "dive"
-		}
-		os.Setenv("CI", "true")
-		foundation.RunCommandWithArgs(ctx, command, []string{containerPath})
+		log.Warn().Msg("Support for 'action: dive' has been removed, please remove your stage")
 
 	case "trivy":
 
-		if runtime.GOOS == "windows" {
-			log.Fatal().Msgf("Trivy is currently not supported for windows!")
-		}
-
-		foundation.RunCommand(ctx, "/trivy --version")
-
-		if *tag != "" {
-			estafetteBuildVersionAsTag = *tag
-		}
-		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
-
-		// run trivy for all vulnerabilities by default
-		if *minimumSeverityToFail == "" {
-			*minimumSeverityToFail = "UNKNOWN"
-		}
-
-		// run trivy for CRITICAL
-		severityArgument := "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
-		switch strings.ToUpper(*minimumSeverityToFail) {
-		case "UNKNOWN":
-			severityArgument = "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
-		case "LOW":
-			severityArgument = "LOW,MEDIUM,HIGH,CRITICAL"
-		case "MEDIUM":
-			severityArgument = "MEDIUM,HIGH,CRITICAL"
-		case "HIGH":
-			severityArgument = "HIGH,CRITICAL"
-		case "CRITICAL":
-			severityArgument = "CRITICAL"
-		}
-
-		// update trivy db, ignore errors
-		log.Info().Msg("Updating trivy vulnerabilities database...")
-		_ = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--light", "--download-db-only", containerPath})
-
-		log.Info().Msg("Saving docker image to file for scanning...")
-		tmpfile, err := ioutil.TempFile("", "*.tar")
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed creating temporary file")
-		}
-		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
-
-		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
-
-		if err != nil {
-			if strings.EqualFold(err.Error(), "exit status 1") {
-				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
-				// await https://github.com/aquasecurity/trivy/pull/476 to be released
-				log.Warn().Msg("Ignoring Unknown OS error")
-			} else {
-				log.Fatal().Msgf("The container image has vulnerabilities! Look at https://estafette.io/security/vulnerabilities/ to learn how to fix vulnerabilities in your image.")
-			}
-		}
+		log.Warn().Msgf("Direct support for 'action: trivy' has been removed, please use 'severity: %v' on the stage with 'action: build' to use a non-default severity", *minimumSeverityToFail)
 
 	default:
 		log.Fatal().Msg("Set `action: <action>` on this step to run build, push, tag or history")

@@ -9,37 +9,14 @@ RUN netsh interface ipv4 show subinterfaces; \
 	}; \
 	netsh interface ipv4 show subinterfaces;
 
-ENV DIVE_VERSION 0.10.0
-ENV DIVE_DOWNLOAD_URL https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_${DIVE_VERSION}_windows_amd64.zip
-
-RUN Write-Host ('Downloading {0} to dive.zip ...' -f $env:DIVE_DOWNLOAD_URL); \
-	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
-	Invoke-WebRequest -Uri $env:DIVE_DOWNLOAD_URL -OutFile 'dive.zip' -TimeoutSec 300; \
-	\
-	Write-Host 'Expanding dive.zip ...'; \
-	Expand-Archive -Path dive.zip -DestinationPath C:\dive\.; \
-	\
-	Write-Host 'Removing dive.zip ...'; \
-	Remove-Item dive.zip -Force; \
-	\
-	Write-Host 'Updating PATH ...'; \
-	$env:PATH = 'C:\dive;' + $env:PATH; \
-	[Environment]::SetEnvironmentVariable('PATH', $env:PATH, [EnvironmentVariableTarget]::Machine); \
-	\
-	Write-Host 'Verifying install ("dive version") ...'; \
-	dive version; \
-	\
-	Write-Host 'Completed installing dive.';
-
 FROM mcr.microsoft.com/windows/nanoserver:1809
 
-COPY --from=builder /dive /dive
 COPY ./estafette-extension-docker.exe C:/estafette-extension-docker.exe
 
 ENV ESTAFETTE_LOG_FORMAT="console"
 
 USER ContainerAdministrator
 
-RUN setx /m PATH "%PATH%;C:\dod;C:\dive"
+RUN setx /m PATH "%PATH%;C:\dod"
 
 ENTRYPOINT ["C:/estafette-extension-docker.exe"]

@@ -25,63 +25,14 @@ stages:
     image: extensions/docker:stable
     action: build
     container: docker
-    inline: |
-      FROM alpine:3.13
-
-      ARG DIVE_VERSION=0.10.0
-
-      RUN wget -O- https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_${DIVE_VERSION}_linux_amd64.tar.gz | \
-          tar -xzf - -C / \
-          && /dive version
-
-      ARG TRIVY_VERSION=0.18.3
-
-      RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | \
-          tar -xzf - -C / \
-          && /trivy --version \
-          && /trivy --cache-dir /trivy-cache image --light --no-progress --download-db-only \
-          && /trivy --cache-dir /trivy-cache image --severity CRITICAL --light --skip-update --no-progress --ignore-unfixed alpine:3.11
-
-      FROM scratch
-
-      LABEL maintainer="estafette.io"
-
-      COPY ${ESTAFETTE_GIT_NAME} /
-      COPY ca-certificates.crt /etc/ssl/certs/
-      COPY --from=0 /dive /dive
-      COPY --from=0 /trivy /trivy
-      COPY --from=0 /trivy-cache /trivy-cache
-      COPY --from=0 /tmp /tmp
-
-      ENV PATH="/dod:$PATH" \
-          ESTAFETTE_LOG_FORMAT="console" \
-          BUILDKIT_PROGRESS="plain"
-
-      ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
+    severity: unknown
     repositories:
     - extensions
     path: ./publish
     dontExpand:
-    - DIVE_VERSION
     - TRIVY_VERSION
     copy:
     - /etc/ssl/certs/ca-certificates.crt
-
-  check-container:
-    parallelStages:
-      check-efficiency:
-        image: extensions/docker:stable
-        action: dive
-        container: docker
-        repositories:
-        - extensions
-
-      vulnerability-scan:
-        image: extensions/docker:stable
-        action: trivy
-        container: docker
-        repositories:
-        - extensions
 
   tests:
     parallelStages:
@@ -167,21 +118,6 @@ stages:
         repositories:
         - extensions
 
-      test-dive:
-        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
-        action: dive
-        container: docker
-        repositories:
-        - extensions
-
-      test-trivy:
-        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
-        action: trivy
-        severity: critical
-        container: docker
-        repositories:
-        - extensions
-
   push-to-docker-hub:
     image: extensions/docker:stable
     action: push
@@ -235,11 +171,39 @@ releases:
           status == 'failed'
 
   stable:
+    triggers:
+    - cron:
+        schedule: '0 4 * * *'
+      releases:
+        version: current
+    clone: true
     stages:
-      tag-container-image:
+      build:
+        image: golang:1.16-alpine
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+        commands:
+        - go test ./...
+        - go build -a -installsuffix cgo -ldflags "-X main.appgroup=${ESTAFETTE_LABEL_APP_GROUP} -X main.app=${ESTAFETTE_GIT_NAME} -X main.version=${ESTAFETTE_BUILD_VERSION} -X main.revision=${ESTAFETTE_GIT_REVISION} -X main.branch=${ESTAFETTE_GIT_BRANCH} -X main.buildDate=${ESTAFETTE_BUILD_DATETIME}" -o ./publish/${ESTAFETTE_GIT_NAME} .
+
+      bake:
         image: extensions/docker:stable
-        action: tag
+        action: build
         container: docker
+        repositories:
+        - extensions
+        path: ./publish
+        dontExpand:
+        - TRIVY_VERSION
+        copy:
+        - /etc/ssl/certs/ca-certificates.crt
+
+      push-to-docker-hub:
+        image: extensions/docker:stable
+        action: push
+        container: docker
+        pushVersionTag: false
         repositories:
         - extensions
         tags:
@@ -295,13 +259,6 @@ releases:
           FROM mcr.microsoft.com/windows/nanoserver:1809
 
           RUN netsh interface ipv4 show interfaces
-        repositories:
-        - extensions
-
-      check-efficiency:
-        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
-        action: dive
-        container: docker
         repositories:
         - extensions
 
