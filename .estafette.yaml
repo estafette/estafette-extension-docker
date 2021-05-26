@@ -37,6 +37,7 @@ stages:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: build
         container: docker-test
+        noCachePush: true
         inline: |
           FROM docker:latest
 
@@ -62,6 +63,7 @@ stages:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: build
         container: docker-test-2
+        noCachePush: true
         inline: |
           FROM golang:1.16-alpine AS builder
 

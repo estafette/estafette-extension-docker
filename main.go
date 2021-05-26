@@ -46,6 +46,7 @@ var (
 	versionTagPrefix           = kingpin.Flag("version-tag-prefix", "A prefix to add to the version tag so promoting different containers originating from the same pipeline is possible.").Envar("ESTAFETTE_EXTENSION_VERSION_TAG_PREFIX").String()
 	versionTagSuffix           = kingpin.Flag("version-tag-suffix", "A suffix to add to the version tag so promoting different containers originating from the same pipeline is possible.").Envar("ESTAFETTE_EXTENSION_VERSION_TAG_SUFFIX").String()
 	noCache                    = kingpin.Flag("no-cache", "Indicates cache shouldn't be used when building the image.").Default("false").Envar("ESTAFETTE_EXTENSION_NO_CACHE").Bool()
+	noCachePush                = kingpin.Flag("no-cache-push", "Indicates no dlc cache tag should be pushed when building the image.").Default("false").Envar("ESTAFETTE_EXTENSION_NO_CACHE_PUSH").Bool()
 	expandEnvironmentVariables = kingpin.Flag("expand-envvars", "By default environment variables get replaced in the Dockerfile, use this flag to disable that behaviour").Default("true").Envar("ESTAFETTE_EXTENSION_EXPAND_VARIABLES").Bool()
 	dontExpand                 = kingpin.Flag("dont-expand", "Comma separate list of environment variable names that should not be expanded").Default("PATH").Envar("ESTAFETTE_EXTENSION_DONT_EXPAND").String()
 
@@ -270,7 +271,7 @@ func main() {
 				continue
 			}
 			loginIfRequired(credentials, false, i.imagePath)
-			log.Info().Msgf("Pulling container image %v", i)
+			log.Info().Msgf("Pulling container image %v", i.imagePath)
 			pullArgs := []string{
 				"pull",
 				i.imagePath,
@@ -280,7 +281,7 @@ func main() {
 
 		// login to registry for destination container image
 		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
-		loginIfRequired(credentials, false, containerPath)
+		loginIfRequired(credentials, !*noCachePush, containerPath)
 
 		// build docker image
 		log.Info().Msgf("Building docker image %v...", containerPath)
@@ -348,7 +349,7 @@ func main() {
 			args = append(args, *path)
 			foundation.RunCommandWithArgs(ctx, "docker", args)
 
-			if isCacheable {
+			if isCacheable && !*noCachePush {
 				log.Info().Msgf("Pushing cache container image %v", dockerLayerCachingPath)
 				pushArgs := []string{
 					"push",
@@ -712,34 +713,36 @@ func loginIfRequired(credentials []ContainerRegistryCredentials, push bool, cont
 
 	log.Info().Msgf("Filtered %v container-registry credentials down to %v", len(credentials), len(filteredCredentialsMap))
 
-	if filteredCredentialsMap != nil {
-		for _, c := range filteredCredentialsMap {
-			if c != nil {
+	if push && len(filteredCredentialsMap) == 0 {
+		log.Warn().Msgf("No credentials foudn for images %v while it's needed for a push. Disable ", containerImages)
+	}
 
-				fullRepositoryPath := fmt.Sprintf("%v/%v/%v", *gitSource, *gitOwner, *gitName)
-				if push && !isAllowedPipelineForPush(*c, fullRepositoryPath) {
-					log.Info().Msgf("Pushing to repository '%v' is not allowed, skipping login", c.AdditionalProperties.Repository)
-					continue
-				}
+	for _, c := range filteredCredentialsMap {
+		if c != nil {
 
-				log.Info().Msgf("Logging in to repository '%v'", c.AdditionalProperties.Repository)
-				loginArgs := []string{
-					"login",
-					"--username",
-					c.AdditionalProperties.Username,
-					"--password",
-					c.AdditionalProperties.Password,
-				}
-
-				repositorySlice := strings.Split(c.AdditionalProperties.Repository, "/")
-				if len(repositorySlice) > 1 {
-					server := repositorySlice[0]
-					loginArgs = append(loginArgs, server)
-				}
-
-				err := exec.Command("docker", loginArgs...).Run()
-				foundation.HandleError(err)
+			fullRepositoryPath := fmt.Sprintf("%v/%v/%v", *gitSource, *gitOwner, *gitName)
+			if push && !isAllowedPipelineForPush(*c, fullRepositoryPath) {
+				log.Info().Msgf("Pushing to repository '%v' is not allowed, skipping login", c.AdditionalProperties.Repository)
+				continue
 			}
+
+			log.Info().Msgf("Logging in to repository '%v'", c.AdditionalProperties.Repository)
+			loginArgs := []string{
+				"login",
+				"--username",
+				c.AdditionalProperties.Username,
+				"--password",
+				c.AdditionalProperties.Password,
+			}
+
+			repositorySlice := strings.Split(c.AdditionalProperties.Repository, "/")
+			if len(repositorySlice) > 1 {
+				server := repositorySlice[0]
+				loginArgs = append(loginArgs, server)
+			}
+
+			err := exec.Command("docker", loginArgs...).Run()
+			foundation.HandleError(err)
 		}
 	}
 }
