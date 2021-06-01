@@ -386,12 +386,12 @@ func main() {
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		// remove .trivyignore file so devs can't game the system
-		if foundation.FileExists(".trivyignore") {
-			err = os.Remove(".trivyignore")
-			if err != nil {
-				log.Fatal().Msg("Could not remove .trivyignore file")
-			}
-		}
+		// if foundation.FileExists(".trivyignore") {
+		// 	err = os.Remove(".trivyignore")
+		// 	if err != nil {
+		// 		log.Fatal().Msg("Could not remove .trivyignore file")
+		// 	}
+		// }
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
 		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
