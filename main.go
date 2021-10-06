@@ -268,7 +268,7 @@ func main() {
 			fmt.Println(targetDockerfile)
 			log.Info().Msg("")
 
-			foundation.RunCommand(ctx, "cat %v", targetDockerfilePath)
+			foundation.RunCommand(ctx, "cat -A %v", targetDockerfilePath)
 
 			log.Fatal().Msg("Failed detecting image paths in FROM statements, exiting")
 		}

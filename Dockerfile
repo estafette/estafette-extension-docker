@@ -2,7 +2,8 @@ FROM alpine:3.14 AS builder
 
 # update root certificates to copy into runtime image
 RUN apk --no-cache add ca-certificates \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/cache/apk/* \
+    && which cat
 
 # download trivy
 ARG TRIVY_VERSION=0.19.2
@@ -19,9 +20,10 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /trivy /trivy
 COPY --from=builder /trivy-cache /trivy-cache
 COPY --from=builder /tmp /tmp
+COPY --from=builder /bin/cat /bin/cat
 COPY estafette-extension-docker /
 
-ENV PATH="/dod:$PATH" \
+ENV PATH="/dod:/bin:$PATH" \
     ESTAFETTE_LOG_FORMAT="console" \
     DOCKER_BUILDKIT="1" \
     BUILDKIT_PROGRESS="plain"

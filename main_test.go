@@ -336,9 +336,7 @@ RUN apt-get update \
 				libx11-dev \
 			&& rm -rf /var/lib/apt/lists/*
 
-CMD ["dotnet", "./Some.dll"]
-
-`
+CMD ["dotnet", "./Some.dll"]`
 
 		// act
 		containerImages, err := getFromImagePathsFromDockerfile(dockerfileContent)
