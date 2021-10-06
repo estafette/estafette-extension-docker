@@ -321,6 +321,33 @@ ENTRYPOINT ["/estafette-extension-docker"]`
 		assert.Equal(t, false, containerImages[1].isOfficialDockerHubImage)
 		assert.Equal(t, "", containerImages[1].stageName)
 	})
+
+	t.Run("TestFailingGetFromImagePaths", func(t *testing.T) {
+
+		dockerfileContent := `FROM mcr.microsoft.com/dotnet/runtime-deps:5.0
+
+WORKDIR /app
+COPY . ./
+
+RUN apt-get update \
+		&& apt-get install -y --allow-unauthenticated \
+				libc6-dev \
+				libgdiplus \
+				libx11-dev \
+			&& rm -rf /var/lib/apt/lists/*
+
+CMD ["dotnet", "./Travix.VoucherDataCleanup.dll"]
+
+`
+
+		// act
+		containerImages, err := getFromImagePathsFromDockerfile(dockerfileContent)
+
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(containerImages))
+		assert.Equal(t, "mcr.microsoft.com/dotnet/runtime-deps:5.0", containerImages[0].imagePath)
+		assert.Equal(t, false, containerImages[0].isOfficialDockerHubImage)
+	})
 }
 
 func TestTidyBuildVersionAsTag(t *testing.T) {
