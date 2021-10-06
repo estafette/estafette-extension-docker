@@ -336,7 +336,7 @@ RUN apt-get update \
 				libx11-dev \
 			&& rm -rf /var/lib/apt/lists/*
 
-CMD ["dotnet", "./Travix.VoucherDataCleanup.dll"]
+CMD ["dotnet", "./Some.dll"]
 
 `
 
