@@ -12,9 +12,6 @@ version:
     minor: 1
 
 stages:
-
-
-stages:
   build-and-lint:
     parallelStages:
       build:
