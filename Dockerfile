@@ -20,10 +20,9 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /trivy /trivy
 COPY --from=builder /trivy-cache /trivy-cache
 COPY --from=builder /tmp /tmp
-COPY --from=builder /bin/cat /bin/cat
 COPY estafette-extension-docker /
 
-ENV PATH="/dod:/bin:$PATH" \
+ENV PATH="/dod:$PATH" \
     ESTAFETTE_LOG_FORMAT="console" \
     DOCKER_BUILDKIT="1" \
     BUILDKIT_PROGRESS="plain"
