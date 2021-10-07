@@ -700,7 +700,7 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]fromImage, err
 
 	matches := imagesFromDockerFileRegex.FindAllStringSubmatch(dockerfileContent, -1)
 
-	log.Debug().Interface("matches", matches)
+	log.Debug().Interface("matches", matches).Msg("Showing FROM matches")
 
 	if len(matches) > 0 {
 		for _, m := range matches {
