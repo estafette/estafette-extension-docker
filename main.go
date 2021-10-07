@@ -26,7 +26,6 @@ var (
 	branch    string
 	revision  string
 	buildDate string
-	goVersion = runtime.Version()
 )
 
 var (
@@ -40,7 +39,6 @@ var (
 	dockerfile                 = kingpin.Flag("dockerfile", "Dockerfile to build, defaults to Dockerfile.").Default("Dockerfile").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_DOCKERFILE").String()
 	inlineDockerfile           = kingpin.Flag("inline", "Dockerfile to build inlined.").Envar("ESTAFETTE_EXTENSION_INLINE").String()
 	copy                       = kingpin.Flag("copy", "List of files or directories to copy into the build directory.").Envar("ESTAFETTE_EXTENSION_COPY").String()
-	target                     = kingpin.Flag("target", "Specify which stage to target for multi-stage build.").Envar("ESTAFETTE_EXTENSION_TARGET").String()
 	args                       = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
 	pushVersionTag             = kingpin.Flag("push-version-tag", "By default the version tag is pushed, so it can be promoted with a release, but if you don't want it you can disable it via this flag.").Default("true").Envar("ESTAFETTE_EXTENSION_PUSH_VERSION_TAG").Bool()
 	versionTagPrefix           = kingpin.Flag("version-tag-prefix", "A prefix to add to the version tag so promoting different containers originating from the same pipeline is possible.").Envar("ESTAFETTE_EXTENSION_VERSION_TAG_PREFIX").String()
@@ -53,7 +51,6 @@ var (
 	gitSource = kingpin.Flag("git-source", "Repository source.").Envar("ESTAFETTE_GIT_SOURCE").String()
 	gitOwner  = kingpin.Flag("git-owner", "Repository owner.").Envar("ESTAFETTE_GIT_OWNER").String()
 	gitName   = kingpin.Flag("git-name", "Repository name, used as application name if not passed explicitly and app label not being set.").Envar("ESTAFETTE_GIT_NAME").String()
-	gitBranch = kingpin.Flag("git-branch", "Git branch to tag image with for improved caching.").Envar("ESTAFETTE_GIT_BRANCH").String()
 	appLabel  = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
 
 	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("HIGH").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_SEVERITY").String()
@@ -237,6 +234,8 @@ func main() {
 			data, err := ioutil.ReadFile(sourceDockerfilePath)
 			foundation.HandleError(err)
 			sourceDockerfile = string(data)
+			// trim BOM
+			sourceDockerfile = strings.TrimPrefix(sourceDockerfile, "\uFEFF")
 		}
 
 		targetDockerfile := sourceDockerfile
@@ -264,6 +263,19 @@ func main() {
 		// find all images in FROM statements in dockerfile
 		fromImagePaths, err := getFromImagePathsFromDockerfile(targetDockerfile)
 		foundation.HandleError(err)
+
+		if len(fromImagePaths) == 0 {
+
+			log.Info().Msgf("%v (as string):", sourceDockerfilePath)
+			fmt.Println(targetDockerfile)
+			log.Info().Msg("")
+
+			log.Info().Msgf("%v (as bytes):", sourceDockerfilePath)
+			data, _ := ioutil.ReadFile(sourceDockerfilePath)
+			fmt.Println(data)
+
+			log.Fatal().Msg("Failed detecting image paths in FROM statements, exiting")
+		}
 
 		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
 		for _, i := range fromImagePaths {
@@ -629,7 +641,7 @@ func validateRepositories(repositories, action string) {
 
 func getCredentialsForContainers(credentials []ContainerRegistryCredentials, containerImages []string) map[string]*ContainerRegistryCredentials {
 
-	filteredCredentialsMap := make(map[string]*ContainerRegistryCredentials, 0)
+	filteredCredentialsMap := make(map[string]*ContainerRegistryCredentials)
 
 	if credentials != nil {
 		// loop all container images
@@ -689,6 +701,8 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]fromImage, err
 	}
 
 	matches := imagesFromDockerFileRegex.FindAllStringSubmatch(dockerfileContent, -1)
+
+	log.Debug().Interface("matches", matches).Msg("Showing FROM matches")
 
 	if len(matches) > 0 {
 		for _, m := range matches {

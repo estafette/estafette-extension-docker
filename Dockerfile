@@ -2,7 +2,8 @@ FROM alpine:3.14 AS builder
 
 # update root certificates to copy into runtime image
 RUN apk --no-cache add ca-certificates \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/cache/apk/* \
+    && which cat
 
 # download trivy
 ARG TRIVY_VERSION=0.19.2
