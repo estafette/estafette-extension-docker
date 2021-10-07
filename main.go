@@ -234,6 +234,8 @@ func main() {
 			data, err := ioutil.ReadFile(sourceDockerfilePath)
 			foundation.HandleError(err)
 			sourceDockerfile = string(data)
+			// trim BOM
+			sourceDockerfile = strings.TrimPrefix(sourceDockerfile, "\uFEFF")
 		}
 
 		targetDockerfile := sourceDockerfile
