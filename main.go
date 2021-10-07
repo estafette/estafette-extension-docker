@@ -264,11 +264,13 @@ func main() {
 
 		if len(fromImagePaths) == 0 {
 
-			log.Info().Msg("")
+			log.Info().Msgf("%v (as string):", sourceDockerfilePath)
 			fmt.Println(targetDockerfile)
 			log.Info().Msg("")
 
-			foundation.RunCommand(ctx, "cat -A %v", targetDockerfilePath)
+			log.Info().Msgf("%v (as bytes):", sourceDockerfilePath)
+			data, _ := ioutil.ReadFile(sourceDockerfilePath)
+			fmt.Println(data)
 
 			log.Fatal().Msg("Failed detecting image paths in FROM statements, exiting")
 		}
@@ -697,6 +699,8 @@ func getFromImagePathsFromDockerfile(dockerfileContent string) ([]fromImage, err
 	}
 
 	matches := imagesFromDockerFileRegex.FindAllStringSubmatch(dockerfileContent, -1)
+
+	log.Debug().Interface("matches", matches)
 
 	if len(matches) > 0 {
 		for _, m := range matches {
