@@ -39,7 +39,7 @@ tag-container-image:
 
 The docker extension supports the following actions: `build, push, tag`. For pushing and tagging containers it uses the credentials and trusted images configuration in the Estafette server to get access to Docker registry credentials automatically
 
-## Build
+## build
 
 ```yaml
 bake:
