@@ -35,8 +35,8 @@ var (
 	container                  = kingpin.Flag("container", "Name of the container to build, defaults to app label if present.").Envar("ESTAFETTE_EXTENSION_CONTAINER").String()
 	tag                        = kingpin.Flag("tag", "Tag for an image to show history for.").Envar("ESTAFETTE_EXTENSION_TAG").String()
 	tags                       = kingpin.Flag("tags", "List of tags the image needs to receive.").Envar("ESTAFETTE_EXTENSION_TAGS").String()
-	path                       = kingpin.Flag("path", "Directory to build docker container from, defaults to current working directory.").Default(".").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_PATH").String()
-	dockerfile                 = kingpin.Flag("dockerfile", "Dockerfile to build, defaults to Dockerfile.").Default("Dockerfile").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_DOCKERFILE").String()
+	path                       = kingpin.Flag("path", "Directory to build docker container from, defaults to current working directory.").Default(".").Envar("ESTAFETTE_EXTENSION_PATH").String()
+	dockerfile                 = kingpin.Flag("dockerfile", "Dockerfile to build, defaults to Dockerfile.").Default("Dockerfile").Envar("ESTAFETTE_EXTENSION_DOCKERFILE").String()
 	inlineDockerfile           = kingpin.Flag("inline", "Dockerfile to build inlined.").Envar("ESTAFETTE_EXTENSION_INLINE").String()
 	copy                       = kingpin.Flag("copy", "List of files or directories to copy into the build directory.").Envar("ESTAFETTE_EXTENSION_COPY").String()
 	args                       = kingpin.Flag("args", "List of build arguments to pass to the build.").Envar("ESTAFETTE_EXTENSION_ARGS").String()
@@ -53,7 +53,7 @@ var (
 	gitName   = kingpin.Flag("git-name", "Repository name, used as application name if not passed explicitly and app label not being set.").Envar("ESTAFETTE_GIT_NAME").String()
 	appLabel  = kingpin.Flag("app-name", "App label, used as application name if not passed explicitly.").Envar("ESTAFETTE_LABEL_APP").String()
 
-	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("HIGH").OverrideDefaultFromEnvar("ESTAFETTE_EXTENSION_SEVERITY").String()
+	minimumSeverityToFail = kingpin.Flag("minimum-severity-to-fail", "Minimum severity of detected vulnerabilities to fail the build on").Default("HIGH").Envar("ESTAFETTE_EXTENSION_SEVERITY").String()
 
 	credentialsPath    = kingpin.Flag("credentials-path", "Path to file with container registry credentials configured at the CI server, passed in to this trusted extension.").Default("/credentials/container_registry.json").String()
 	githubAPITokenPath = kingpin.Flag("githubApiToken-path", "Path to file with Github api token credentials configured at the CI server, passed in to this trusted extension.").Default("/credentials/github_api_token.json").String()
@@ -121,7 +121,10 @@ func main() {
 		}
 		if len(githubAPIToken) > 0 {
 			// set as env, so it gets used by Trivy to avoid github api rate limits when downloading db
-			os.Setenv("GITHUB_TOKEN", githubAPIToken[0].AdditionalProperties.Token)
+			err := os.Setenv("GITHUB_TOKEN", githubAPIToken[0].AdditionalProperties.Token)
+			if err != nil {
+				log.Fatal().Msgf("Failed reading Github token file at path %v.", *githubAPITokenPath)
+			}
 		}
 	}
 
@@ -303,7 +306,7 @@ func main() {
 		log.Info().Msg("")
 
 		// build every layer separately and push it to registry to be used as cache next time
-		dockerLayerCachingPaths := []string{}
+		var dockerLayerCachingPaths []string
 		for index, i := range fromImagePaths {
 			isFinalLayer := index == len(fromImagePaths)-1
 			isCacheable := !*noCache && runtime.GOOS != "windows"
@@ -694,7 +697,7 @@ type fromImage struct {
 
 func getFromImagePathsFromDockerfile(dockerfileContent string) ([]fromImage, error) {
 
-	containerImages := []fromImage{}
+	var containerImages []fromImage
 
 	if imagesFromDockerFileRegex == nil {
 		imagesFromDockerFileRegex = regexp.MustCompile(`(?mi)^\s*FROM\s+([^\s]+)(\s+AS\s+([^\s]+))?\s*$`)

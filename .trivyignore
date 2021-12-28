@@ -1,2 +1,3 @@
-# awaiting release of https://github.com/aquasecurity/trivy/issues/1226
-CVE-2021-32760
+# awaiting to fix https://github.com/aquasecurity/trivy/issues/1523
+CVE-2021-41092
+CVE-2021-41103
