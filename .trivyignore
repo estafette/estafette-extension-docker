@@ -1,3 +1,7 @@
 # awaiting to fix https://github.com/aquasecurity/trivy/issues/1523
 CVE-2021-41092
 CVE-2021-41103
+
+# issues on node packages, remove when they're solved
+CVE-2021-3807
+CVE-2021-3918
