@@ -4,3 +4,4 @@ CVE-2021-41103
 # awaiting to fix https://github.com/aquasecurity/trivy/issues/1870
 CVE-2021-43816
 GMS-2022-20
+CVE-2022-0778
