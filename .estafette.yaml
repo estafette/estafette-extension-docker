@@ -47,7 +47,7 @@ stages:
         severity: critical
         noCachePush: true
         inline: |
-          FROM docker:latest
+          FROM docker:dlc
 
           RUN apk update \
               && apk add --no-cache --upgrade \
@@ -100,7 +100,7 @@ stages:
         no-cache: true
         container: hugo-test
         inline: |
-          FROM extensions/docker:latest
+          FROM extensions/docker:dlc
 
           COPY ca-certificates.crt /etc/ssl/certs/
           COPY publish /publish
