@@ -47,7 +47,7 @@ stages:
         severity: critical
         noCachePush: true
         inline: |
-          FROM docker:dlc
+          FROM docker:latest
 
           RUN apk update \
               && apk add --no-cache --upgrade \
