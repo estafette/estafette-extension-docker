@@ -409,16 +409,10 @@ func main() {
 		// }
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
 
 		if err != nil {
-			if strings.EqualFold(err.Error(), "exit status 1") {
-				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
-				// await https://github.com/aquasecurity/trivy/pull/476 to be released
-				log.Warn().Msg("Ignoring Unknown OS error")
-			} else {
-				log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/usage/fixing-vulnerabilities/ to learn how to fix vulnerabilities in your image.", severityArgument)
-			}
+			log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/usage/fixing-vulnerabilities/ to learn how to fix vulnerabilities in your image.", severityArgument)
 		}
 
 	case "push":

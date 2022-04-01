@@ -178,11 +178,6 @@ releases:
           status == 'failed'
 
   stable:
-    triggers:
-    - cron:
-        schedule: '0 4 * * *'
-      releases:
-        version: current
     clone: true
     stages:
       build:
