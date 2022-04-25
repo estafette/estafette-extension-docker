@@ -280,7 +280,7 @@ func main() {
 			log.Fatal().Msg("Failed detecting image paths in FROM statements, exiting")
 		}
 
-		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
+		// pull images in advance, so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
 		for _, i := range fromImagePaths {
 			if i.isOfficialDockerHubImage {
 				continue
@@ -398,6 +398,16 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
+
+		// Download Trivy db and save it to path /trivy-cache
+		bucketName := ""
+		for i, _ := range repositoriesSlice {
+			if bucketName != credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket {
+				bucketName = credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket
+				foundation.RunCommandWithArgs(ctx, "gsutil", []string{"-m", "cp", "-r", fmt.Sprintf("gs://%v/trivy-cache/*", bucketName), "/trivy-cache"})
+			}
+		}
+
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		// remove .trivyignore file so devs can't game the system
@@ -739,7 +749,7 @@ func loginIfRequired(credentials []ContainerRegistryCredentials, push bool, cont
 	log.Info().Msgf("Filtered %v container-registry credentials down to %v", len(credentials), len(filteredCredentialsMap))
 
 	if push && len(filteredCredentialsMap) == 0 {
-		log.Warn().Msgf("No credentials foudn for images %v while it's needed for a push. Disable ", containerImages)
+		log.Warn().Msgf("No credentials found for images %v while it's needed for a push. Disable ", containerImages)
 	}
 
 	for _, c := range filteredCredentialsMap {

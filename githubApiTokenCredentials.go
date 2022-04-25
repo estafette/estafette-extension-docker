@@ -1,6 +1,6 @@
 package main
 
-// APITokenCredentials represents the credentials of type bitbucket-api-tokene as defined in the server config and passed to this trusted image
+// APITokenCredentials represents the credentials of type github-api-token as defined in the server config and passed to this trusted image
 type APITokenCredentials struct {
 	Name                 string                                  `json:"name,omitempty"`
 	Type                 string                                  `json:"type,omitempty"`
