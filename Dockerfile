@@ -1,4 +1,4 @@
-FROM alpine:3.15 AS builder
+FROM google/cloud-sdk:alpine AS builder
 
 # update root certificates to copy into runtime image
 RUN apk --no-cache add ca-certificates \
@@ -11,10 +11,6 @@ RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VE
     tar -xzf - -C / \
     && /trivy --version
 
-# download google sdk
-RUN wget https://storage.googleapis.com/pub/gsutil.tar.gz && tar xfz gsutil.tar.gz -C $HOME && rm gsutil.tar.gz
-ENV PATH ${PATH}:/root/gsutil
-
 # download trivy database
 RUN /trivy --cache-dir /trivy-cache image --no-progress --download-db-only
 
@@ -23,13 +19,13 @@ FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /trivy /trivy
 COPY --from=builder /trivy-cache /trivy-cache
-COPY --from=builder /root/gsutil /gsutil
 COPY --from=builder /tmp /tmp
 COPY estafette-extension-docker /
 
 ENV PATH="/dod:$PATH" \
     ESTAFETTE_LOG_FORMAT="console" \
     DOCKER_BUILDKIT="1" \
-    BUILDKIT_PROGRESS="plain"
+    BUILDKIT_PROGRESS="plain" \
+    GOOGLE_APPLICATION_CREDENTIALS="/key-file.json"
 
 ENTRYPOINT ["/estafette-extension-docker"]

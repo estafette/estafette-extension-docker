@@ -14,4 +14,5 @@ type ContainerRegistryCredentialsAdditionalProperties struct {
 	Password                      string `json:"password,omitempty"`
 	AllowedPipelinesToPush        string `json:"allowedPipelinesToPush,omitempty"`
 	TrivyVulnerabilityDBGCSBucket string `json:"trivyVulnerabilityDBGCSBucket,omitempty"`
+	ServiceAccountKeyfile         string `json:"serviceAccountKeyfile,omitempty"`
 }

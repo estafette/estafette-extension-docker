@@ -32,6 +32,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 		}
@@ -54,6 +55,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 		}
@@ -78,6 +80,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 			ContainerRegistryCredentials{
@@ -88,6 +91,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 		}
@@ -113,6 +117,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 			ContainerRegistryCredentials{
@@ -123,6 +128,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 		}
@@ -150,6 +156,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 			ContainerRegistryCredentials{
@@ -160,6 +167,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 			ContainerRegistryCredentials{
@@ -170,6 +178,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 		}
@@ -198,6 +207,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 		}
@@ -223,6 +233,7 @@ func TestGetCredentialsForContainers(t *testing.T) {
 					Username:                      "user",
 					Password:                      "password",
 					TrivyVulnerabilityDBGCSBucket: "bucket",
+					ServiceAccountKeyfile:         "key-file.json",
 				},
 			},
 		}
