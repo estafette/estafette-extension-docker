@@ -404,7 +404,7 @@ func main() {
 		for i, _ := range repositoriesSlice {
 			if bucketName != credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket {
 				bucketName = credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket
-				foundation.RunCommandWithArgs(ctx, "gsutil", []string{"-m", "cp", "-r", fmt.Sprintf("gs://%v/trivy-cache/*", bucketName), "/trivy-cache"})
+				foundation.RunCommandWithArgs(ctx, "/gsutil", []string{"-m", "cp", "-r", fmt.Sprintf("gs://%v/trivy-cache/*", bucketName), "/trivy-cache"})
 			}
 		}
 

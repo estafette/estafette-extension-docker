@@ -11,6 +11,10 @@ RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VE
     tar -xzf - -C / \
     && /trivy --version
 
+# download google sdk
+RUN wget https://storage.googleapis.com/pub/gsutil.tar.gz && tar xfz gsutil.tar.gz -C $HOME && rm gsutil.tar.gz
+ENV PATH ${PATH}:/root/gsutil
+
 # download trivy database
 RUN /trivy --cache-dir /trivy-cache image --no-progress --download-db-only
 
@@ -19,6 +23,7 @@ FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /trivy /trivy
 COPY --from=builder /trivy-cache /trivy-cache
+COPY --from=builder /root/gsutil /gsutil
 COPY --from=builder /tmp /tmp
 COPY estafette-extension-docker /
 
