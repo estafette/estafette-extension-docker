@@ -419,8 +419,8 @@ func main() {
 				log.Info().Msgf("Using service account to download Trivy db %v...", serviceAccountKeyFile.ClientEmail)
 
 				bucketName = credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket
-				foundation.RunCommandWithArgs(ctx, "/gcloud", []string{"auth", "application-default", "login"})
-				foundation.RunCommandWithArgs(ctx, "/gsutil", []string{"-m", "cp", "-r", fmt.Sprintf("gs://%v/trivy-cache/*", bucketName), "/trivy-cache"})
+				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"auth", "application-default", "login"})
+				foundation.RunCommandWithArgs(ctx, "gsutil", []string{"-m", "cp", "-r", fmt.Sprintf("gs://%v/trivy-cache/*", bucketName), "/trivy-cache"})
 			}
 		}
 

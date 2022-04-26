@@ -19,8 +19,8 @@ FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /trivy /trivy
 COPY --from=builder /trivy-cache /trivy-cache
-COPY --from=builder /google-cloud-sdk/bin/gcloud /gcloud
-COPY --from=builder /google-cloud-sdk/bin/gsutil /gsutil
+COPY --from=builder /google-cloud-sdk/bin/gcloud /google-cloud-sdk/bin/gcloud
+COPY --from=builder /google-cloud-sdk/bin/gsutil /google-cloud-sdk/bin/gsutil
 COPY --from=builder /tmp /tmp
 COPY estafette-extension-docker /
 
