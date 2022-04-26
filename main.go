@@ -401,7 +401,7 @@ func main() {
 
 		// Download Trivy db and save it to path /trivy-cache
 		bucketName := ""
-		for i, _ := range repositoriesSlice {
+		for i := range repositoriesSlice {
 			if bucketName != credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket {
 				credential := credentials[i]
 				err = ioutil.WriteFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"), []byte(credential.AdditionalProperties.ServiceAccountKeyfile), 0666)
@@ -412,7 +412,10 @@ func main() {
 				var serviceAccountKeyFile struct {
 					ClientEmail string `json:"client_email"`
 				}
-				json.Unmarshal([]byte(credential.AdditionalProperties.ServiceAccountKeyfile), &serviceAccountKeyFile)
+				err = json.Unmarshal([]byte(credential.AdditionalProperties.ServiceAccountKeyfile), &serviceAccountKeyFile)
+				if err != nil {
+					log.Fatal().Err(err).Msg("Failed reading service account keyfile")
+				}
 				log.Info().Msgf("Using service account to download Trivy db %v...", serviceAccountKeyFile.ClientEmail)
 
 				bucketName = credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket
