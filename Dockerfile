@@ -1,4 +1,4 @@
-FROM google/cloud-sdk:alpine AS builder
+FROM google/cloud-sdk:382.0.0-alpine AS builder
 
 # update root certificates to copy into runtime image
 RUN apk --no-cache add ca-certificates \
@@ -24,7 +24,7 @@ COPY --from=builder /google-cloud-sdk/bin/gsutil /google-cloud-sdk/bin/gsutil
 COPY --from=builder /tmp /tmp
 COPY estafette-extension-docker /
 
-ENV PATH="/dod:$PATH" \
+ENV PATH="$PATH:/google-cloud-sdk/bin" \
     ESTAFETTE_LOG_FORMAT="console" \
     DOCKER_BUILDKIT="1" \
     BUILDKIT_PROGRESS="plain" \
