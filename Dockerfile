@@ -24,7 +24,7 @@ COPY --from=builder /google-cloud-sdk/bin/gsutil /google-cloud-sdk/bin/gsutil
 COPY --from=builder /tmp /tmp
 COPY estafette-extension-docker /
 
-ENV PATH="/dod:$PATH;$PATH:/google-cloud-sdk/bin" \
+ENV PATH="/dod" \
     ESTAFETTE_LOG_FORMAT="console" \
     DOCKER_BUILDKIT="1" \
     BUILDKIT_PROGRESS="plain" \
