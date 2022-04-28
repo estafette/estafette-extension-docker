@@ -15,11 +15,9 @@ RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VE
 RUN /trivy --cache-dir /trivy-cache image --no-progress --download-db-only
 
 # Downloading gcloud package
-RUN curl https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz > /tmp/google-cloud-sdk.tar.gz
-
-# Installing the package
-RUN mkdir -p /usr/local/gcloud \
-  && tar -C /usr/local/gcloud -xvf /tmp/google-cloud-sdk.tar.gz \
+RUN wget -O-  https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz | \
+  mkdir -p /usr/local/gcloud \
+  && tar -xvf - -C  \
   && /usr/local/gcloud/google-cloud-sdk/install.sh
 
 # Adding the package path to local
