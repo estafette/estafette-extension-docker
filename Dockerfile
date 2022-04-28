@@ -17,7 +17,7 @@ RUN /trivy --cache-dir /trivy-cache image --no-progress --download-db-only
 # Downloading gcloud package
 RUN wget -O-  https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz | \
   mkdir -p /usr/local/gcloud \
-  && tar -xvf - -C  \
+  && tar -xvf - -C / \
   && /usr/local/gcloud/google-cloud-sdk/install.sh
 
 # Adding the package path to local
