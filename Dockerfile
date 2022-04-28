@@ -1,4 +1,4 @@
-FROM google/cloud-sdk:382.0.0-alpine AS builder
+FROM google/cloud-sdk:382.0.0-alpine
 
 # update root certificates to copy into runtime image
 RUN apk --no-cache add ca-certificates \
@@ -13,6 +13,8 @@ RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VE
 
 # download trivy database
 RUN /trivy --cache-dir /trivy-cache image --no-progress --download-db-only
+
+COPY estafette-extension-docker /
 
 ENV PATH="/dod:$PATH;$PATH:/google-cloud-sdk/bin" \
     ESTAFETTE_LOG_FORMAT="console" \
