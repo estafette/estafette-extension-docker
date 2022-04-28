@@ -9,10 +9,11 @@ type ContainerRegistryCredentials struct {
 
 // ContainerRegistryCredentialsAdditionalProperties contains the non standard fields for this type of credentials
 type ContainerRegistryCredentialsAdditionalProperties struct {
-	Repository                    string `json:"repository,omitempty"`
-	Username                      string `json:"username,omitempty"`
-	Password                      string `json:"password,omitempty"`
-	AllowedPipelinesToPush        string `json:"allowedPipelinesToPush,omitempty"`
-	TrivyVulnerabilityDBGCSBucket string `json:"trivyVulnerabilityDBGCSBucket,omitempty"`
-	ServiceAccountKeyfile         string `json:"serviceAccountKeyfile,omitempty"`
+	Repository                     string `json:"repository,omitempty"`
+	Username                       string `json:"username,omitempty"`
+	Password                       string `json:"password,omitempty"`
+	AllowedPipelinesToPush         string `json:"allowedPipelinesToPush,omitempty"`
+	TrivyVulnerabilityDBGCSBucket  string `json:"trivyVulnerabilityDBGCSBucket,omitempty"`
+	TrivyVulnerabilityDBGCSProject string `json:"trivyVulnerabilityDBGCSProject,omitempty"`
+	ServiceAccountKeyfile          string `json:"serviceAccountKeyfile,omitempty"`
 }

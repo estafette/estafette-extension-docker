@@ -404,6 +404,7 @@ func main() {
 		for i := range repositoriesSlice {
 			if bucketName != credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket {
 				credential := credentials[i]
+
 				err = ioutil.WriteFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"), []byte(credential.AdditionalProperties.ServiceAccountKeyfile), 0666)
 				if err != nil {
 					log.Fatal().Err(err).Msg("Failed writing service account keyfile")
@@ -419,7 +420,16 @@ func main() {
 				log.Info().Msgf("Using service account to download Trivy db %v...", serviceAccountKeyFile.ClientEmail)
 
 				bucketName = credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket
-				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"auth", "application-default", "login", "--quiet"})
+
+				log.Info().Msg("Authenticating to google cloud")
+				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"auth", "activate-service-account", serviceAccountKeyFile.ClientEmail, "--key-file", "/key-file.json"})
+
+				log.Info().Msg("Setting gcloud account")
+				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"config", "set", "account", serviceAccountKeyFile.ClientEmail})
+
+				log.Info().Msg("Setting gcloud project")
+				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"config", "set", "project", credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSProject})
+
 				foundation.RunCommandWithArgs(ctx, "gsutil", []string{"-m", "cp", "-r", fmt.Sprintf("gs://%v/trivy-cache/*", bucketName), "/trivy-cache"})
 			}
 		}
