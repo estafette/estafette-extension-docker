@@ -100,7 +100,7 @@ stages:
         no-cache: true
         container: hugo-test
         inline: |
-          FROM extensions/docker:${ESTAFETTE_BUILD_VERSION}
+          FROM extensions/docker:dlc
 
           COPY ca-certificates.crt /etc/ssl/certs/
           COPY publish /publish
