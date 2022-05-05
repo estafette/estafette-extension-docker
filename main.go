@@ -280,7 +280,7 @@ func main() {
 			log.Fatal().Msg("Failed detecting image paths in FROM statements, exiting")
 		}
 
-		// pull images in advance so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
+		// pull images in advance, so we can log in to different repositories in the same registry (see https://github.com/moby/moby/issues/37569)
 		for _, i := range fromImagePaths {
 			if i.isOfficialDockerHubImage {
 				continue
@@ -398,6 +398,42 @@ func main() {
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
+
+		// Download Trivy db and save it to path /trivy-cache
+		bucketName := ""
+		for i := range repositoriesSlice {
+			if bucketName != credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket {
+				credential := credentials[i]
+
+				err = ioutil.WriteFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"), []byte(credential.AdditionalProperties.ServiceAccountKeyfile), 0666)
+				if err != nil {
+					log.Fatal().Err(err).Msg("Failed writing service account keyfile")
+				}
+
+				var serviceAccountKeyFile struct {
+					ClientEmail string `json:"client_email"`
+				}
+				err = json.Unmarshal([]byte(credential.AdditionalProperties.ServiceAccountKeyfile), &serviceAccountKeyFile)
+				if err != nil {
+					log.Fatal().Err(err).Msg("Failed reading service account keyfile")
+				}
+				log.Info().Msgf("Using service account to download Trivy db %v...", serviceAccountKeyFile.ClientEmail)
+
+				bucketName = credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket
+
+				log.Info().Msg("Authenticating to google cloud")
+				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"auth", "activate-service-account", serviceAccountKeyFile.ClientEmail, "--key-file", "/key-file.json"})
+
+				log.Info().Msg("Setting gcloud account")
+				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"config", "set", "account", serviceAccountKeyFile.ClientEmail})
+
+				log.Info().Msg("Setting gcloud project")
+				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"config", "set", "project", credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSProject})
+
+				foundation.RunCommandWithArgs(ctx, "gsutil", []string{"-m", "cp", "-r", fmt.Sprintf("gs://%v/trivy-cache/*", bucketName), "/trivy-cache"})
+			}
+		}
+
 		foundation.RunCommandWithArgs(ctx, "docker", []string{"save", containerPath, "-o", tmpfile.Name()})
 
 		// remove .trivyignore file so devs can't game the system
@@ -409,16 +445,10 @@ func main() {
 		// }
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--light", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "image", "--severity", severityArgument, "--security-checks", "vuln", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
 
 		if err != nil {
-			if strings.EqualFold(err.Error(), "exit status 1") {
-				// ignore exit code, until trivy fixes this on their side, see https://github.com/aquasecurity/trivy/issues/8
-				// await https://github.com/aquasecurity/trivy/pull/476 to be released
-				log.Warn().Msg("Ignoring Unknown OS error")
-			} else {
-				log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/usage/fixing-vulnerabilities/ to learn how to fix vulnerabilities in your image.", severityArgument)
-			}
+			log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/usage/fixing-vulnerabilities/ to learn how to fix vulnerabilities in your image.", severityArgument)
 		}
 
 	case "push":
@@ -739,7 +769,7 @@ func loginIfRequired(credentials []ContainerRegistryCredentials, push bool, cont
 	log.Info().Msgf("Filtered %v container-registry credentials down to %v", len(credentials), len(filteredCredentialsMap))
 
 	if push && len(filteredCredentialsMap) == 0 {
-		log.Warn().Msgf("No credentials foudn for images %v while it's needed for a push. Disable ", containerImages)
+		log.Warn().Msgf("No credentials found for images %v while it's needed for a push. Disable ", containerImages)
 	}
 
 	for _, c := range filteredCredentialsMap {
