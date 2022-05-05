@@ -178,15 +178,10 @@ releases:
           status == 'failed'
 
   stable:
-    triggers:
-    - cron:
-        schedule: '0 4 * * *'
-      releases:
-        version: current
     clone: true
     stages:
       build:
-        image: golang:1.16-alpine
+        image: golang:1.17-alpine
         env:
           CGO_ENABLED: 0
           GOOS: linux
