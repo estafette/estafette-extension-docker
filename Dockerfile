@@ -10,7 +10,6 @@ RUN apk --no-cache add ca-certificates \
 ARG TRIVY_VERSION=0.27.1
 RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | \
     tar -xzf - -C / \
-    && rm -rf /var/cache/apk/* \
     && /trivy --version
 
 # download trivy database
