@@ -402,7 +402,7 @@ func main() {
 		// Download Trivy db and save it to path /trivy-cache
 		bucketName := ""
 		for i := range repositoriesSlice {
-			if bucketName != credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket {
+			if credentials != nil && bucketName != credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket {
 				credential := credentials[i]
 
 				err = ioutil.WriteFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"), []byte(credential.AdditionalProperties.ServiceAccountKeyfile), 0666)
