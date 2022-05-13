@@ -430,7 +430,7 @@ func main() {
 				bucketName = credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket
 
 				log.Info().Msg("Authenticating to google cloud")
-				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"auth", "activate-service-account", serviceAccountKeyFile.ClientEmail, "--key-file", "/key-file.json"})
+				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"auth", "activate-service-account", serviceAccountKeyFile.ClientEmail, "--key-file", os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")})
 
 				log.Info().Msg("Setting gcloud account")
 				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"config", "set", "account", serviceAccountKeyFile.ClientEmail})
