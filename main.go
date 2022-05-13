@@ -405,6 +405,14 @@ func main() {
 			if credentials != nil && bucketName != credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket {
 				credential := credentials[i]
 
+				pathDir := filepath.Dir(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+				if _, err := os.Stat(pathDir); os.IsNotExist(err) {
+					err = os.MkdirAll(pathDir, os.ModePerm)
+					if err != nil {
+						log.Fatal().Err(err).Msg("Failed creating directory")
+
+					}
+				}
 				err = ioutil.WriteFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"), []byte(credential.AdditionalProperties.ServiceAccountKeyfile), 0666)
 				if err != nil {
 					log.Fatal().Err(err).Msg("Failed writing service account keyfile")
@@ -422,7 +430,7 @@ func main() {
 				bucketName = credentials[i].AdditionalProperties.TrivyVulnerabilityDBGCSBucket
 
 				log.Info().Msg("Authenticating to google cloud")
-				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"auth", "activate-service-account", serviceAccountKeyFile.ClientEmail, "--key-file", "/key-file.json"})
+				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"auth", "activate-service-account", serviceAccountKeyFile.ClientEmail, "--key-file", os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")})
 
 				log.Info().Msg("Setting gcloud account")
 				foundation.RunCommandWithArgs(ctx, "gcloud", []string{"config", "set", "account", serviceAccountKeyFile.ClientEmail})
