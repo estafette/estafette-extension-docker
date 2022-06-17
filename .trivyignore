@@ -1,5 +1,2 @@
-# awaiting to fix https://github.com/aquasecurity/trivy/issues/2033
-GMS-2022-20   
-
-# awaiting Trivy to upgrade the version on fixed issue https://github.com/bitnami-labs/sealed-secrets/issues/830
-CVE-2022-27191
+# https://github.com/aquasecurity/trivy/issues/2350
+CVE-2022-23648
