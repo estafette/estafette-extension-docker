@@ -94,24 +94,24 @@ stages:
         copy:
         - /etc/ssl/certs/ca-certificates.crt
 
-      test-build-from-private-registry:
-        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
-        action: build
-        no-cache: true
-        container: hugo-test
-        inline: |
-          FROM extensions/docker:${ESTAFETTE_BUILD_VERSION}
-          RUN rm -rf google-cloud-sdk/bin/anthoscli \
-              && rm -rf /var/cache/apk/* 
-
-          COPY ca-certificates.crt /etc/ssl/certs/
-          COPY publish /publish
-        repositories:
-        - extensions
-        path: ./publish-hugo
-        copy:
-        - /etc/ssl/certs/ca-certificates.crt
-        - publish
+#      test-build-from-private-registry:
+#        image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
+#        action: build
+#        no-cache: true
+#        container: hugo-test
+#        inline: |
+#          FROM extensions/docker:dev
+#          RUN rm -rf google-cloud-sdk/bin/anthoscli \
+#              && rm -rf /var/cache/apk/*
+#
+#          COPY ca-certificates.crt /etc/ssl/certs/
+#          COPY publish /publish
+#        repositories:
+#        - extensions
+#        path: ./publish-hugo
+#        copy:
+#        - /etc/ssl/certs/ca-certificates.crt
+#        - publish
 
       test-history:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
