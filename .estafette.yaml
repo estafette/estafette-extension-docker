@@ -102,7 +102,7 @@ stages:
         inline: |
           FROM extensions/docker:dev
           RUN rm -rf google-cloud-sdk/bin/anthoscli \
-              && rm -rf /var/cache/apk/* 
+              && rm -rf /var/cache/apk/*
 
           COPY ca-certificates.crt /etc/ssl/certs/
           COPY publish /publish
