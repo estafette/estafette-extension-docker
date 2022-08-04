@@ -100,7 +100,7 @@ stages:
         no-cache: true
         container: hugo-test
         inline: |
-          FROM extensions/docker:dev
+          FROM extensions/docker:${ESTAFETTE_BUILD_VERSION}
           RUN rm -rf google-cloud-sdk/bin/anthoscli \
               && rm -rf /var/cache/apk/*
 
