@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -95,7 +94,7 @@ func main() {
 	}
 	if foundation.FileExists(*credentialsPath) {
 		log.Info().Msgf("Reading credentials from file at path %v...", *credentialsPath)
-		credentialsFileContent, err := ioutil.ReadFile(*credentialsPath)
+		credentialsFileContent, err := os.ReadFile(*credentialsPath)
 		if err != nil {
 			log.Fatal().Msgf("Failed reading credential file at path %v.", *credentialsPath)
 		}
@@ -110,7 +109,7 @@ func main() {
 	}
 	if foundation.FileExists(*githubAPITokenPath) {
 		log.Info().Msgf("Reading credentials from file at path %v...", *githubAPITokenPath)
-		credentialsFileContent, err := ioutil.ReadFile(*githubAPITokenPath)
+		credentialsFileContent, err := os.ReadFile(*githubAPITokenPath)
 		if err != nil {
 			log.Fatal().Msgf("Failed reading credential file at path %v.", *githubAPITokenPath)
 		}
@@ -234,7 +233,7 @@ func main() {
 
 		if sourceDockerfile == "" && sourceDockerfilePath != "" {
 			log.Info().Msgf("Reading dockerfile content from %v...", sourceDockerfilePath)
-			data, err := ioutil.ReadFile(sourceDockerfilePath)
+			data, err := os.ReadFile(sourceDockerfilePath)
 			foundation.HandleError(err)
 			sourceDockerfile = string(data)
 			// trim BOM
@@ -248,12 +247,12 @@ func main() {
 		}
 
 		log.Info().Msgf("Writing Dockerfile to %v...", targetDockerfilePath)
-		err := ioutil.WriteFile(targetDockerfilePath, []byte(targetDockerfile), 0644)
+		err := os.WriteFile(targetDockerfilePath, []byte(targetDockerfile), 0644)
 		foundation.HandleError(err)
 
 		// list directory content
 		log.Info().Msgf("Listing directory %v content", *path)
-		files, err := ioutil.ReadDir(*path)
+		files, err := os.ReadDir(*path)
 		foundation.HandleError(err)
 		for _, f := range files {
 			if f.IsDir() {
@@ -274,7 +273,7 @@ func main() {
 			log.Info().Msg("")
 
 			log.Info().Msgf("%v (as bytes):", sourceDockerfilePath)
-			data, _ := ioutil.ReadFile(sourceDockerfilePath)
+			data, _ := os.ReadFile(sourceDockerfilePath)
 			fmt.Println(data)
 
 			log.Fatal().Msg("Failed detecting image paths in FROM statements, exiting")
@@ -394,7 +393,7 @@ func main() {
 		}
 
 		log.Info().Msg("Saving docker image to file for scanning...")
-		tmpfile, err := ioutil.TempFile("", "*.tar")
+		tmpfile, err := os.MkdirTemp("", "*.tar")
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
@@ -413,7 +412,7 @@ func main() {
 
 					}
 				}
-				err = ioutil.WriteFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"), []byte(credential.AdditionalProperties.ServiceAccountKeyfile), 0666)
+				err = os.WriteFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"), []byte(credential.AdditionalProperties.ServiceAccountKeyfile), 0666)
 				if err != nil {
 					log.Fatal().Err(err).Msg("Failed writing service account keyfile")
 				}
