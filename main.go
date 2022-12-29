@@ -393,7 +393,7 @@ func main() {
 		}
 
 		log.Info().Msg("Saving docker image to file for scanning...")
-		tmpfile, err := os.MkdirTemp("", "*.tar")
+		tmpfile, err := os.CreateTemp("", "*.tar")
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed creating temporary file")
 		}
