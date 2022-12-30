@@ -104,20 +104,18 @@ stages:
           FROM extensions/docker:dev
           RUN rm -rf google-cloud-sdk/bin/anthoscli && \
               apk -U upgrade &&  \
-              apk update && \
-              apk add --no-cache --upgrade \
-                  git \
-                  trivy && \
-              rm -rf /var/cache/apk/* && \
+              rm -rf /var/cache/apk/* 
 
           COPY ca-certificates.crt /etc/ssl/certs/
           COPY publish /publish
+          COPY .trivyignore /.trivyignore
         repositories:
         - extensions
         path: ./publish-hugo
         copy:
         - /etc/ssl/certs/ca-certificates.crt
         - publish
+        - .trivyignore
 
       test-history:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
