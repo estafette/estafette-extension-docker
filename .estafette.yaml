@@ -32,7 +32,7 @@ stages:
     image: extensions/docker:stable
     action: build
     container: docker
-    severity: unknown
+    severity: high
     repositories:
     - extensions
     path: ./publish
@@ -98,20 +98,24 @@ stages:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: build
         no-cache: true
+        severity: critical
         container: hugo-test
         inline: |
           FROM extensions/docker:dev
-          RUN rm -rf google-cloud-sdk/bin/anthoscli \
-              && rm -rf /var/cache/apk/*
+          RUN rm -rf google-cloud-sdk/bin/anthoscli && \
+              apk -U upgrade &&  \
+              rm -rf /var/cache/apk/* 
 
           COPY ca-certificates.crt /etc/ssl/certs/
           COPY publish /publish
+          COPY .trivyignore /.trivyignore
         repositories:
         - extensions
         path: ./publish-hugo
         copy:
         - /etc/ssl/certs/ca-certificates.crt
         - publish
+        - .trivyignore
 
       test-history:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
