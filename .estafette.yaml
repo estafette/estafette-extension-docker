@@ -98,11 +98,17 @@ stages:
         image: extensions/docker:${ESTAFETTE_BUILD_VERSION}
         action: build
         no-cache: true
+        severity: critical
         container: hugo-test
         inline: |
           FROM extensions/docker:dev
-          RUN rm -rf google-cloud-sdk/bin/anthoscli \
-              && rm -rf /var/cache/apk/*
+          RUN rm -rf google-cloud-sdk/bin/anthoscli && \
+              apk -U upgrade &&  \
+              apk update && \
+              apk add --no-cache --upgrade \
+                  git \
+                  trivy && \
+              rm -rf /var/cache/apk/* && \
 
           COPY ca-certificates.crt /etc/ssl/certs/
           COPY publish /publish
