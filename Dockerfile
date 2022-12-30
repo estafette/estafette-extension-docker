@@ -1,7 +1,7 @@
 FROM google/cloud-sdk:412.0.0-alpine
 
-# update root certificates to copy into runtime image
-RUN apk --no-cache add ca-certificates \
+# upgrade all packages and update root certificates to copy into runtime image
+RUN apk -U upgrade && apk --no-cache add ca-certificates \
     && rm -rf google-cloud-sdk/bin/anthoscli \
     && rm -rf /var/cache/apk/* \
     && which cat
