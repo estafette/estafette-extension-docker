@@ -32,7 +32,7 @@ stages:
     image: extensions/docker:stable
     action: build
     container: docker
-    severity: high
+    severity: critical
     repositories:
     - extensions
     path: ./publish
