@@ -1,4 +1,4 @@
-FROM google/cloud-sdk:412.0.0-alpine
+FROM google/cloud-sdk:425.0.0-alpine
 
 # upgrade all packages and update root certificates to copy into runtime image
 RUN apk -U upgrade && apk --no-cache add ca-certificates \
