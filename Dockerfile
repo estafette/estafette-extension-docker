@@ -15,7 +15,8 @@ RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VE
 # download trivy database
 RUN /trivy --cache-dir /trivy-cache image --no-progress --download-db-only
 
-RUN pip install --force-reinstall "cryptography==39.0.1"
+RUN apk add py3-pip && \
+    pip install --force-reinstall "cryptography==39.0.1"
 
 COPY estafette-extension-docker /
 
