@@ -72,6 +72,7 @@ stages:
         action: build
         container: docker-test-2
         noCachePush: true
+        severity: critical
         inline: |
           FROM golang:1.18-alpine AS builder
 
