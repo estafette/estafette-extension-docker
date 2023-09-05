@@ -73,7 +73,7 @@ stages:
         container: docker-test-2
         noCachePush: true
         inline: |
-          FROM golang:1.18-alpine AS builder
+          FROM golang:1.20-alpine AS builder
 
           RUN apk update \
               && apk add --no-cache --upgrade \
@@ -81,7 +81,7 @@ stages:
               && rm -rf /var/cache/apk/* \
               && git version
 
-          FROM golang:1.18-alpine
+          FROM golang:1.20-alpine
 
           LABEL maintainer="estafette.io"
 
