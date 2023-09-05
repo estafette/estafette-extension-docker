@@ -217,14 +217,15 @@ func main() {
 		}
 
 		sourceDockerfilePath := ""
-		targetDockerfilePath := filepath.Join(*path, filepath.Base(*dockerfile))
+		dockerFileExpandedPath := os.ExpandEnv(*dockerfile)
+		targetDockerfilePath := filepath.Join(*path, filepath.Base(dockerFileExpandedPath))
 		sourceDockerfile := ""
 
 		// check in order of importance whether `inline` dockerfile is set, path to `dockerfile` is set or a dockerfile exist in /template directory (for building docker extension from this one)
 		if *inlineDockerfile != "" {
 			sourceDockerfile = *inlineDockerfile
-		} else if _, err := os.Stat(*dockerfile); !os.IsNotExist(err) {
-			sourceDockerfilePath = *dockerfile
+		} else if _, err := os.Stat(dockerFileExpandedPath); !os.IsNotExist(err) {
+			sourceDockerfilePath = dockerFileExpandedPath
 		} else if _, err := os.Stat("/template/Dockerfile"); !os.IsNotExist(err) {
 			sourceDockerfilePath = "/template/Dockerfile"
 		} else {
