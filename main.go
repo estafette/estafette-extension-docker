@@ -78,12 +78,13 @@ func main() {
 		}
 	}
 
+	expandedContainer := os.ExpandEnv(*container)
 	// set defaults
-	if *container == "" && *appLabel == "" && *gitName != "" {
-		*container = *gitName
+	if expandedContainer == "" && *appLabel == "" && *gitName != "" {
+		expandedContainer = *gitName
 	}
-	if *container == "" && *appLabel != "" {
-		*container = *appLabel
+	if expandedContainer == "" && *appLabel != "" {
+		expandedContainer = *appLabel
 	}
 
 	// get api token from injected credentials
@@ -152,8 +153,10 @@ func main() {
 	if *versionTagPrefix != "" {
 		estafetteBuildVersionAsTag = tidyTag(*versionTagPrefix + "-" + estafetteBuildVersionAsTag)
 	}
-	if *versionTagSuffix != "" {
-		estafetteBuildVersionAsTag = tidyTag(estafetteBuildVersionAsTag + "-" + *versionTagSuffix)
+
+	expandedVersionTagSuffix := os.ExpandEnv(*versionTagSuffix)
+	if expandedVersionTagSuffix != "" {
+		estafetteBuildVersionAsTag = tidyTag(estafetteBuildVersionAsTag + "-" + expandedVersionTagSuffix)
 	}
 
 	switch *action {
@@ -189,9 +192,11 @@ func main() {
 		// - SOME_BUILD_ARG_ENVVAR
 
 		// make build dir if it doesn't exist
-		log.Info().Msgf("Ensuring build directory %v exists", *path)
-		if ok, _ := pathExists(*path); !ok {
-			err := os.MkdirAll(*path, os.ModePerm)
+
+		expandedPath := os.ExpandEnv(*path)
+		log.Info().Msgf("Ensuring build directory %v exists", expandedPath)
+		if ok, _ := pathExists(expandedPath); !ok {
+			err := os.MkdirAll(expandedPath, os.ModePerm)
 			foundation.HandleError(err)
 		}
 
@@ -202,13 +207,13 @@ func main() {
 			foundation.HandleError(err)
 			switch mode := fi.Mode(); {
 			case mode.IsDir():
-				log.Info().Msgf("Copying directory %v to %v", c, *path)
-				err := cpy.Copy(c, filepath.Join(*path, filepath.Base(c)))
+				log.Info().Msgf("Copying directory %v to %v", c, expandedPath)
+				err := cpy.Copy(c, filepath.Join(expandedPath, filepath.Base(c)))
 				foundation.HandleError(err)
 
 			case mode.IsRegular():
-				log.Info().Msgf("Copying file %v to %v", c, *path)
-				err := cpy.Copy(c, filepath.Join(*path, filepath.Base(c)))
+				log.Info().Msgf("Copying file %v to %v", c, expandedPath)
+				err := cpy.Copy(c, filepath.Join(expandedPath, filepath.Base(c)))
 				foundation.HandleError(err)
 
 			default:
@@ -218,7 +223,7 @@ func main() {
 
 		sourceDockerfilePath := ""
 		dockerFileExpandedPath := os.ExpandEnv(*dockerfile)
-		targetDockerfilePath := filepath.Join(*path, filepath.Base(dockerFileExpandedPath))
+		targetDockerfilePath := filepath.Join(expandedPath, filepath.Base(dockerFileExpandedPath))
 		sourceDockerfile := ""
 
 		// check in order of importance whether `inline` dockerfile is set, path to `dockerfile` is set or a dockerfile exist in /template directory (for building docker extension from this one)
@@ -252,8 +257,8 @@ func main() {
 		foundation.HandleError(err)
 
 		// list directory content
-		log.Info().Msgf("Listing directory %v content", *path)
-		files, err := os.ReadDir(*path)
+		log.Info().Msgf("Listing directory %v content", expandedPath)
+		files, err := os.ReadDir(expandedPath)
 		foundation.HandleError(err)
 		for _, f := range files {
 			if f.IsDir() {
@@ -295,7 +300,7 @@ func main() {
 		}
 
 		// login to registry for destination container image
-		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
+		containerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], expandedContainer, estafetteBuildVersionAsTag)
 		loginIfRequired(credentials, !*noCachePush, containerPath)
 
 		// build docker image
@@ -321,7 +326,7 @@ func main() {
 				dockerLayerCachingTag = tidyTag(fmt.Sprintf("dlc-%v", i.stageName))
 			}
 
-			dockerLayerCachingPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, dockerLayerCachingTag)
+			dockerLayerCachingPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], expandedContainer, dockerLayerCachingTag)
 			dockerLayerCachingPaths = append(dockerLayerCachingPaths, dockerLayerCachingPath)
 
 			args := []string{
@@ -342,12 +347,12 @@ func main() {
 
 			if isFinalLayer {
 				for _, r := range repositoriesSlice {
-					args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag))
+					args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, expandedContainer, estafetteBuildVersionAsTag))
 					for _, t := range tagsSlice {
 						if r == repositoriesSlice[0] && (t == estafetteBuildVersionAsTag || t == dockerLayerCachingTag) {
 							continue
 						}
-						args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, *container, t))
+						args = append(args, "--tag", fmt.Sprintf("%v/%v:%v", r, expandedContainer, t))
 					}
 				}
 			} else {
@@ -361,7 +366,7 @@ func main() {
 			}
 
 			args = append(args, "--file", targetDockerfilePath)
-			args = append(args, *path)
+			args = append(args, expandedPath)
 			foundation.RunCommandWithArgs(ctx, "docker", args)
 
 			if isCacheable && !*noCachePush {
@@ -457,7 +462,7 @@ func main() {
 		}
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "--timeout", "20m", "image", "--severity", severityArgument, "--security-checks", "vuln", "--skip-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "--timeout", "20m", "image", "--severity", severityArgument, "--scanners", "vuln", "--skip-db-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
 
 		if err != nil {
 			log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/usage/fixing-vulnerabilities/ to learn how to fix vulnerabilities in your image.", severityArgument)
@@ -473,12 +478,12 @@ func main() {
 		// tags:
 		// - dev
 
-		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
+		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], expandedContainer, estafetteBuildVersionAsTag)
 
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
 
-			targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag)
+			targetContainerPath := fmt.Sprintf("%v/%v:%v", r, expandedContainer, estafetteBuildVersionAsTag)
 
 			if i > 0 {
 				// tag container with default tag (it already exists for the first repository)
@@ -517,7 +522,7 @@ func main() {
 					continue
 				}
 
-				targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, t)
+				targetContainerPath := fmt.Sprintf("%v/%v:%v", r, expandedContainer, t)
 
 				// tag container with additional tag
 				log.Info().Msgf("Tagging container image %v", targetContainerPath)
@@ -550,7 +555,7 @@ func main() {
 		// - stable
 		// - latest
 
-		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], *container, estafetteBuildVersionAsTag)
+		sourceContainerPath := fmt.Sprintf("%v/%v:%v", repositoriesSlice[0], expandedContainer, estafetteBuildVersionAsTag)
 
 		loginIfRequired(credentials, false, sourceContainerPath)
 
@@ -565,7 +570,7 @@ func main() {
 		// push each repository + tag combination
 		for i, r := range repositoriesSlice {
 
-			targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, estafetteBuildVersionAsTag)
+			targetContainerPath := fmt.Sprintf("%v/%v:%v", r, expandedContainer, estafetteBuildVersionAsTag)
 
 			if i > 0 {
 				// tag container with default tag
@@ -591,7 +596,7 @@ func main() {
 			// push additional tags
 			for _, t := range tagsSlice {
 
-				targetContainerPath := fmt.Sprintf("%v/%v:%v", r, *container, t)
+				targetContainerPath := fmt.Sprintf("%v/%v:%v", r, expandedContainer, t)
 
 				// tag container with additional tag
 				log.Info().Msgf("Tagging container image %v", targetContainerPath)
@@ -634,7 +639,7 @@ func main() {
 		if len(repositoriesSlice) > 0 {
 			sourceContainerPath += repositoriesSlice[0] + "/"
 		}
-		sourceContainerPath += *container
+		sourceContainerPath += expandedContainer
 		if *tag != "" {
 			sourceContainerPath += ":" + *tag
 		}
