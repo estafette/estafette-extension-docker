@@ -3,6 +3,7 @@ FROM google/cloud-sdk:448.0.0-alpine
 # upgrade all packages and update root certificates to copy into runtime image
 RUN apk -U upgrade && apk --no-cache add ca-certificates \
     && rm -rf google-cloud-sdk/bin/anthoscli \
+    && apk add python3 py3-pip && pip3 install --upgrade setuptools \
     && rm -rf /var/cache/apk/* \
     && which cat
 
