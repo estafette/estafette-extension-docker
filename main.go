@@ -399,7 +399,7 @@ func main() {
 		}
 
 		// set JavaDB repositories for fallback scenarios (e.g. rate limiting failure)
-		javaDbRepositories := "public.ecr.aws/aquasecurity/trivy-java-db:1,aquasec/trivy-java-db:1,ghcr.io/aquasecurity/trivy-java-db:1"
+		javaDbRepositories := "public.ecr.aws/aquasecurity/trivy-java-db:2,aquasec/trivy-java-db:2,ghcr.io/aquasecurity/trivy-java-db:2"
 		
 		log.Info().Msg("Saving docker image to file for scanning...")
 		tmpfile, err := os.CreateTemp("", "*.tar")
