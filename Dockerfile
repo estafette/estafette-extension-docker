@@ -1,4 +1,4 @@
-FROM google/cloud-sdk:448.0.0-alpine
+FROM google/cloud-sdk:499.0.0-alpine
 
 # upgrade all packages and update root certificates to copy into runtime image
 RUN apk -U upgrade && apk --no-cache add ca-certificates \
@@ -7,7 +7,7 @@ RUN apk -U upgrade && apk --no-cache add ca-certificates \
     && which cat
 
 # download trivy
-ARG TRIVY_VERSION=0.45.1
+ARG TRIVY_VERSION=0.56.0
 RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | \
     tar -xzf - -C / \
     && /trivy --version
