@@ -398,6 +398,9 @@ func main() {
 			severityArgument = "CRITICAL"
 		}
 
+		// set JavaDB repositories for fallback scenarios (e.g. rate limiting failure)
+		javaDbRepositories := "ghcr.io/aquasecurity/trivy-java-db:1,public.ecr.aws/aquasecurity/trivy-java-db:1,aquasec/trivy-java-db:1"
+		
 		log.Info().Msg("Saving docker image to file for scanning...")
 		tmpfile, err := os.CreateTemp("", "*.tar")
 		if err != nil {
@@ -462,7 +465,7 @@ func main() {
 		}
 
 		log.Info().Msgf("Scanning container image %v for vulnerabilities of severities %v...", containerPath, severityArgument)
-		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "--timeout", "20m", "image", "--severity", severityArgument, "--scanners", "vuln", "--skip-db-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--input", tmpfile.Name()})
+		err = foundation.RunCommandWithArgsExtended(ctx, "/trivy", []string{"--cache-dir", "/trivy-cache", "--timeout", "20m", "image", "--severity", severityArgument, "--scanners", "vuln", "--skip-db-update", "--no-progress", "--exit-code", "15", "--ignore-unfixed", "--java-db-repository", javaDbRepositories,"--input", tmpfile.Name()})
 
 		if err != nil {
 			log.Fatal().Msgf("The container image has vulnerabilities of severity %v! Look at https://estafette.io/usage/fixing-vulnerabilities/ to learn how to fix vulnerabilities in your image.", severityArgument)
