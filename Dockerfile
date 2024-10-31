@@ -7,13 +7,13 @@ RUN apk -U upgrade && apk --no-cache add ca-certificates \
     && which cat
 
 # download trivy
-ARG TRIVY_VERSION=0.56.0
+ARG TRIVY_VERSION=0.56.1
 RUN wget -O- https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | \
     tar -xzf - -C / \
     && /trivy --version
 
 # download trivy database
-RUN /trivy --cache-dir /trivy-cache image --no-progress --download-db-only  --db-repository '"ghcr.io/aquasecurity/trivy-db:2","public.ecr.aws/aquasecurity/trivy-db"'
+RUN /trivy --cache-dir /trivy-cache image --no-progress --download-db-only  --db-repository '"ghcr.io/aquasecurity/trivy-db","public.ecr.aws/aquasecurity/trivy-db"'
 
 COPY estafette-extension-docker /
 
